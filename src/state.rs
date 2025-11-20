@@ -1,4 +1,4 @@
-use crate::services::user_service::UserService;
+use crate::services::user_services::UserService;
 use mongodb::Database;
 
 #[derive(Clone)]
@@ -9,9 +9,8 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(db: Database) -> Self {
-        Self {
-            user_service: UserService { db: db.clone() },
-            db,
-        }
+        let user_service = UserService::new_user_service(&db);
+
+        Self { db, user_service }
     }
 }
