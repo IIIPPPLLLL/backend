@@ -1,4 +1,4 @@
-use crate::models::{loginrequest::LoginRequest, user::User};
+use crate::models::{claims::Claims, loginrequest::LoginRequest, user::User}; // Import Claims dari models
 use crate::state::AppState;
 use axum::http::StatusCode;
 use axum::{Json, extract::State, response::IntoResponse};
@@ -6,13 +6,6 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-
-#[derive(Serialize, Deserialize)]
-pub struct Claims {
-    pub user_id: String,
-    pub email: String,
-    pub exp: usize,
-}
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {
@@ -83,7 +76,7 @@ pub async fn login(
     (
         StatusCode::OK,
         Json(json!({
-            "message": null,
+            "message": "Login successful",
             "data": {
                 "token": token,
                 "user_id": user_id,

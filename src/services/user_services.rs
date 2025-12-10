@@ -1,38 +1,27 @@
-use crate::models::{loginrequest::LoginRequest, user::User};
+use crate::models::user::User;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use mongodb::{
     Collection,
-    bson::{Document, doc, oid::ObjectId}, // Import Document
+    bson::{doc, oid::ObjectId},
 };
 
 #[derive(Clone)]
 pub struct UserService {
-    pub collection: Collection<Document>,
+    pub collection: Collection<User>,
 }
 
 impl UserService {
-    pub fn new_user_service(db: &mongodb::Database) -> Self {
-        let collection = db.collection::<Document>("User"); // Ubah ke Document
+    pub fn new(collection: Collection<User>) -> Self {
         Self { collection }
     }
 
-    pub async fn register_user(&self, user: User) -> mongodb::error::Result<()> {
+    pub async fn register_user(&self, mut user: User) -> mongodb::error::Result<()> {
         let hashed_password = hash(&user.password, DEFAULT_COST)
             .map_err(|e| mongodb::error::Error::custom(e.to_string()))?;
 
-        let document = doc! {
-            "username": &user.username,
-            "email": &user.email,
-            "password": hashed_password,
-            "health_profile": mongodb::bson::to_bson(&user.health_profile)
-                .map_err(|e| mongodb::error::Error::custom(e.to_string()))?,
-            "food_preferences": mongodb::bson::to_bson(&user.food_preferences)
-                .map_err(|e| mongodb::error::Error::custom(e.to_string()))?,
-        };
+        user.password = hashed_password;
 
-        println!("Inserting document: {:?}", document);
-
-        self.collection.insert_one(document).await?;
+        self.collection.insert_one(user, None).await?;
         Ok(())
     }
 
@@ -48,29 +37,21 @@ impl UserService {
             ]
         };
 
-        match self.collection.find_one(filter).await? {
-            Some(doc) => match mongodb::bson::from_document::<User>(doc) {
-                Ok(user) => match verify(&password, &user.password) {
+        match self.collection.find_one(filter, None).await? {
+            Some(user) => {
+                // Verify password
+                match verify(&password, &user.password) {
                     Ok(true) => Ok(Some(user)),
                     Ok(false) => Ok(None),
                     Err(e) => Err(mongodb::error::Error::custom(e.to_string())),
-                },
-                Err(e) => {
-                    eprintln!("Deserialization error: {:?}", e);
-                    Err(mongodb::error::Error::from(e))
                 }
-            },
+            }
             None => Ok(None),
         }
     }
 
     pub async fn get_user_by_id(&self, id: ObjectId) -> mongodb::error::Result<Option<User>> {
         let filter = doc! { "_id": id };
-        match self.collection.find_one(filter).await? {
-            Some(doc) => mongodb::bson::from_document::<User>(doc)
-                .map(Some)
-                .map_err(|e| mongodb::error::Error::from(e)),
-            None => Ok(None),
-        }
+        self.collection.find_one(filter, None).await // Langsung return User
     }
 }
