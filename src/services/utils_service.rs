@@ -80,6 +80,7 @@ impl UtilsService {
             Some(user) => Ok(Some(FoodPreferences {
                 preferred_foods: user.food_preferences.preferred_foods,
                 allergies: user.food_preferences.allergies,
+                recommendations: user.food_preferences.recommendations,
             })),
             None => Ok(None),
         }
@@ -98,7 +99,12 @@ impl UtilsService {
             .await?;
         Ok(())
     }
-    pub async fn generate_recommend(&self, preferences: &FoodPreferences) -> Vec<String> {
+    pub async fn generate_recommend(
+        &self,
+        user_id: ObjectId,
+        preferences: &FoodPreferences,
+    ) -> Vec<String> {
+        let filter = doc! { "_id": user_id };
         let meal_database = vec![
             (
                 "nasi goreng",
@@ -133,12 +139,30 @@ impl UtilsService {
                 }
             }
         }
+        let update = doc! {
+            "$set": {
+                "food_preferences.recommendations": &recommendations
+            }
+        };
 
         // Remove duplicates
         recommendations.sort();
         recommendations.dedup();
 
         recommendations.truncate(5);
+
+        match self.user_collection.update_one(filter, update, None).await {
+            Ok(result) => {
+                println!(
+                    "💾 Saved {} recommendations (modified: {})",
+                    recommendations.len(),
+                    result.modified_count
+                );
+            }
+            Err(e) => {
+                eprintln!("❌ Failed to save recommendations: {}", e);
+            }
+        }
         recommendations
     }
 }

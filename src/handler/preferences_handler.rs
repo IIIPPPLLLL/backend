@@ -53,7 +53,10 @@ pub async fn get_recommendations_handler(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     // 2. Generate recommendations
-    let recommendations = state.utils_service.generate_recommend(&preferences).await;
+    let recommendations = state
+        .utils_service
+        .generate_recommend(user_id, &preferences)
+        .await;
     Ok(JsonResponse(serde_json::json!({
         "status": "success",
         "recommendations": recommendations

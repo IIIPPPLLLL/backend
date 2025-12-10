@@ -6,4 +6,7 @@ pub struct FoodPreferences {
 
     #[serde(rename = "allergies")]
     pub allergies: Vec<String>,
+
+    #[serde(rename = "recommendations")]
+    pub recommendations: Option<Vec<String>>,
 }
