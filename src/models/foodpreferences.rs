@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+use crate::models::meals::Meal;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FoodPreferences {
     #[serde(rename = "preferred_foods")]
@@ -8,5 +10,5 @@ pub struct FoodPreferences {
     pub allergies: Vec<String>,
 
     #[serde(rename = "recommendations")]
-    pub recommendations: Option<Vec<String>>,
+    pub recommendations: Option<Vec<Meal>>,
 }

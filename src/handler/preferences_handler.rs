@@ -44,21 +44,29 @@ pub async fn get_recommendations_handler(
     State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
 ) -> Result<JsonResponse<serde_json::Value>, StatusCode> {
-    // 1. Get user preferences
-    let preferences = state
-        .utils_service
-        .get_user_food_preferences(user_id)
+    // 1. Get user dengan full data
+    let user = state
+        .user_service
+        .get_user_by_id(user_id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    // 2. Generate recommendations
-    let recommendations = state
-        .utils_service
-        .generate_recommend(user_id, &preferences)
-        .await;
+    let recommendations = match user.food_preferences.recommendations {
+        // Jika sudah ada recommendations, pakai yang ada
+        Some(ref recs) if !recs.is_empty() => recs.clone(),
+        // Jika belum ada, generate baru
+        _ => state
+            .utils_service
+            .generate_recommend(user_id, &user.food_preferences)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+    };
+
     Ok(JsonResponse(serde_json::json!({
         "status": "success",
-        "recommendations": recommendations
+        "user_id": user_id.to_string(),
+        "recommendations": recommendations,
+        "count": recommendations.len()
     })))
 }

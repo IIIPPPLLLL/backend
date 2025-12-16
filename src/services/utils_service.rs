@@ -1,19 +1,27 @@
-use crate::models::{foodpreferences::FoodPreferences, user::User};
+use crate::models::{
+    foodpreferences::FoodPreferences,
+    meals::{self, Meal},
+    user::User,
+};
+use futures_util::TryStreamExt;
 use mongodb::{
     Collection,
-    bson::{doc, oid::ObjectId},
+    bson::{Bson, doc, oid::ObjectId, to_bson},
 };
-
 #[derive(Clone)]
 pub struct UtilsService {
     pub user_collection: Collection<User>,
+    pub meals_collection: Collection<Meal>,
 }
 
 impl UtilsService {
-    pub fn new(user_collection: Collection<User>) -> Self {
-        Self { user_collection }
+    pub fn new(user_collection: Collection<User>, meals_collection: Collection<Meal>) -> Self {
+        Self {
+            user_collection,
+            meals_collection,
+        }
     }
-
+    //Preferences
     pub async fn add_food_preferences(
         &self,
         user_id: ObjectId,
@@ -99,70 +107,120 @@ impl UtilsService {
             .await?;
         Ok(())
     }
+
     pub async fn generate_recommend(
         &self,
         user_id: ObjectId,
         preferences: &FoodPreferences,
-    ) -> Vec<String> {
-        let filter = doc! { "_id": user_id };
-        let meal_database = vec![
-            (
-                "nasi goreng",
-                vec!["Nasi Goreng Special", "Nasi Goreng Seafood"],
-            ),
-            ("ayam", vec!["Ayam Bakar", "Ayam Goreng", "Ayam Panggang"]),
-            ("ikan", vec!["Ikan Bakar", "Ikan Goreng", "Ikan Kukus"]),
-            ("sayur", vec!["Capcay", "Tumis Sayur", "Sayur Asem"]),
-            ("sate", vec!["Sate Ayam", "Sate Kambing"]),
-            ("rendang", vec!["Rendang Sapi", "Rendang Ayam"]),
-        ];
+    ) -> Result<Vec<Meal>, mongodb::error::Error> {
+        let all_meals = self.get_all_meals().await?;
 
-        let mut recommendations = Vec::new();
-        for preferred in &preferences.preferred_foods {
-            let preferred_lower = preferred.to_lowercase();
+        // Score each meal based on preferences
+        let mut scored_meals: Vec<(Meal, i32)> = Vec::new();
 
-            for (category, meals) in &meal_database {
-                if preferred_lower.contains(category) {
-                    for meal in meals {
-                        let mut safe = true;
-                        for allergy in &preferences.allergies {
-                            if meal.to_lowercase().contains(&allergy.to_lowercase()) {
-                                safe = false;
-                                break;
-                            }
-                        }
+        for meal in all_meals {
+            let mut score = 0;
 
-                        if safe {
-                            recommendations.push(meal.to_string());
-                        }
-                    }
+            // Score based on preferred foods
+            for preferred in &preferences.preferred_foods {
+                let preferred_lower = preferred.to_lowercase();
+
+                if meal.name.to_lowercase().contains(&preferred_lower) {
+                    score += 3; // High score for name match
+                }
+
+                if meal.category.to_lowercase().contains(&preferred_lower) {
+                    score += 2; // Medium score for category match
+                }
+
+                if meal
+                    .ingredients
+                    .iter()
+                    .any(|ing| ing.to_lowercase().contains(&preferred_lower))
+                {
+                    score += 1; // Low score for ingredient match
                 }
             }
+
+            // Penalize for allergies
+            for allergy in &preferences.allergies {
+                let allergy_lower = allergy.to_lowercase();
+
+                if meal.name.to_lowercase().contains(&allergy_lower)
+                    || meal
+                        .ingredients
+                        .iter()
+                        .any(|ing| ing.to_lowercase().contains(&allergy_lower))
+                {
+                    score = -100; // Disqualify if contains allergy
+                    break;
+                }
+            }
+
+            if score > 0 {
+                scored_meals.push((meal, score));
+            }
         }
+
+        // Sort by score (highest first)
+        scored_meals.sort_by(|a, b| b.1.cmp(&a.1));
+
+        // Take top 5
+        let recommendations: Vec<Meal> = scored_meals
+            .into_iter()
+            .take(5)
+            .map(|(meal, _)| meal)
+            .collect();
+
+        // ✅ Save FULL Meal objects to user's food_preferences
+
+        let filter = doc! { "_id": user_id };
+        let recommendations_bson: Bson =
+            to_bson(&recommendations).map_err(|e| mongodb::error::Error::custom(e.to_string()))?;
+
         let update = doc! {
             "$set": {
-                "food_preferences.recommendations": &recommendations
+                "food_preferences.recommendations": &recommendations_bson,
             }
         };
-
-        // Remove duplicates
-        recommendations.sort();
-        recommendations.dedup();
-
-        recommendations.truncate(5);
 
         match self.user_collection.update_one(filter, update, None).await {
             Ok(result) => {
                 println!(
-                    "💾 Saved {} recommendations (modified: {})",
+                    "💾 Saved {} meal recommendations for user: {:?} (modified: {})",
                     recommendations.len(),
+                    user_id,
                     result.modified_count
                 );
             }
             Err(e) => {
                 eprintln!("❌ Failed to save recommendations: {}", e);
+                // Bisa return error atau continue
             }
         }
-        recommendations
+
+        Ok(recommendations)
+    }
+
+    // Meals
+    pub async fn add_meal(&self, meal: Meal) -> Result<ObjectId, mongodb::error::Error> {
+        println!("🔧 [UTILS_SERVICE] Adding meal: {:?}", meal);
+
+        let result = self.meals_collection.insert_one(meal, None).await?;
+
+        println!(
+            "✅ [UTILS_SERVICE] Meal inserted. ID: {:?}",
+            result.inserted_id
+        );
+
+        // Extract ObjectId dari result
+        match result.inserted_id.as_object_id() {
+            Some(oid) => Ok(oid),
+            None => Err(mongodb::error::Error::custom("Failed to get inserted ID")),
+        }
+    }
+    pub async fn get_all_meals(&self) -> Result<Vec<Meal>, mongodb::error::Error> {
+        let cursor = self.meals_collection.find(None, None).await?;
+        cursor.try_collect().await
     }
 }
