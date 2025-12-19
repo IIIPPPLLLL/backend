@@ -14,7 +14,6 @@ use axum::{
 use mongodb::bson::oid::ObjectId;
 use serde_json::json;
 
-// 1. Create Schedule Handler
 pub async fn create_schedule_handler(
     Extension(user_id): Extension<ObjectId>,
     State(state): State<AppState>,

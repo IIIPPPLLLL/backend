@@ -17,6 +17,18 @@ pub struct User {
     #[serde(rename = "password")]
     pub password: String,
 
+    #[serde(rename = "gender")]
+    pub gender: String,
+
+    #[serde(rename = "age")]
+    pub age: i32,
+
+    #[serde(rename = "physical_activity_level")]
+    pub physical_activity_level: String,
+
+    #[serde(rename = "goal")]
+    pub goal: String,
+
     #[serde(rename = "health_profile")]
     pub health_profile: Health,
 
