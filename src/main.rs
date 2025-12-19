@@ -15,7 +15,7 @@ use mongodb::{Collection, Database};
 use state::AppState;
 use tokio::net::TcpListener;
 
-use crate::data::seed_meals;
+use crate::{controller::schedule_controller::ScheduleController, data::seed_meals};
 use models::meals::Meal;
 #[tokio::main]
 
@@ -25,22 +25,20 @@ async fn main() {
     // Connect to MongoDB
     let db = connect().await;
 
-    // Seed meals jika collection kosong
     seed_if_empty(&db).await;
 
     let state = AppState::new(db);
 
-    // CLONE state sebelum digunakan di router
     let state_for_router = state.clone();
 
     let app = Router::new()
         .merge(UserController::routes())
-        .with_state(state_for_router); // Gunakan clone di sini
+        .merge(ScheduleController::routes())
+        .with_state(state_for_router);
 
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("🚀 Server running at http://localhost:3000");
 
-    // Sekarang bisa akses `state` karena tidak di-move ke router
     let count = state
         .utils_service
         .meals_collection
@@ -68,7 +66,6 @@ async fn seed_if_empty(db: &Database) {
 
         let meals = seed_meals::get_seed_meals();
 
-        // Insert dalam batch lebih efisien
         let chunks = meals.chunks(10);
         for chunk in chunks {
             if let Err(e) = collection.insert_many(chunk.to_vec(), None).await {

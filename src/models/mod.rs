@@ -4,5 +4,7 @@ pub mod health;
 pub mod loginrequest;
 pub mod meals;
 pub mod recommendationmeals;
+pub mod response;
 pub mod schedule;
+pub mod shoppinglist;
 pub mod user;

@@ -7,19 +7,6 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-#[derive(Serialize)]
-pub struct ApiResponse<T> {
-    pub message: Option<String>,
-    pub data: Option<T>,
-}
-
-#[derive(Serialize)]
-pub struct LoginResponse {
-    pub token: String,
-    pub user_id: String,
-    pub email: String,
-}
-
 pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,

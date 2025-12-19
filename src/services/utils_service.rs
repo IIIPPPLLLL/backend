@@ -55,7 +55,6 @@ impl UtilsService {
     pub async fn remove_preferences(&self, user_id: ObjectId) -> Result<(), mongodb::error::Error> {
         let filter = doc! { "_id": user_id };
 
-        // Update untuk menghapus food preferences (set ke array kosong)
         let update = doc! {
             "$set": {
                 "food_preferences.preferred_foods": [],
@@ -172,8 +171,6 @@ impl UtilsService {
             .map(|(meal, _)| meal)
             .collect();
 
-        // ✅ Save FULL Meal objects to user's food_preferences
-
         let filter = doc! { "_id": user_id };
         let recommendations_bson: Bson =
             to_bson(&recommendations).map_err(|e| mongodb::error::Error::custom(e.to_string()))?;
@@ -195,14 +192,12 @@ impl UtilsService {
             }
             Err(e) => {
                 eprintln!("❌ Failed to save recommendations: {}", e);
-                // Bisa return error atau continue
             }
         }
 
         Ok(recommendations)
     }
 
-    // Meals
     pub async fn add_meal(&self, meal: Meal) -> Result<ObjectId, mongodb::error::Error> {
         println!("🔧 [UTILS_SERVICE] Adding meal: {:?}", meal);
 
@@ -213,7 +208,6 @@ impl UtilsService {
             result.inserted_id
         );
 
-        // Extract ObjectId dari result
         match result.inserted_id.as_object_id() {
             Some(oid) => Ok(oid),
             None => Err(mongodb::error::Error::custom("Failed to get inserted ID")),
