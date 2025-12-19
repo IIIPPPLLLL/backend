@@ -139,7 +139,17 @@ pub async fn get_user_schedules_handler(
                         "name": schedule.name,
                         "description": schedule.description,
                         "shopping_item_count": schedule.shopping_list.len(),
-                        "purchased_count": schedule.shopping_list.iter().filter(|item| item.purchased).count(),
+                        "shopping_list": schedule.shopping_list.iter().map(|item| {
+                            json!({
+                                "id": item.id.as_ref().map(|id| id.to_string()),
+                                "name": item.name,
+                                "quantity": item.quantity,
+                                "unit": item.unit,
+                                "category": item.category,
+                                "purchased": item.purchased,
+                                "notes": item.notes
+                            })
+                        }).collect::<Vec<_>>(),
                         "created_at": schedule.created_at.to_rfc3339()
                     })
                 })
