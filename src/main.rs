@@ -32,9 +32,8 @@ async fn main() {
 
     let state_for_router = state.clone();
 
-    // TAMBAHKAN CORS LAYER
     let cors = CorsLayer::new()
-        .allow_origin(Any) // Untuk development, allow semua origin
+        .allow_origin(Any)
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -47,7 +46,7 @@ async fn main() {
     let app = Router::new()
         .merge(UserController::routes())
         .merge(ScheduleController::routes())
-        .layer(cors) // <- APPLY CORS LAYER
+        .layer(cors)
         .with_state(state_for_router);
 
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
