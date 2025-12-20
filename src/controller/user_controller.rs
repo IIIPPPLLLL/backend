@@ -3,9 +3,9 @@ use crate::handler::preferences_handler::{
     add_food_preferences_handler, get_recommendations_handler, remove_food_preferences_handler,
 };
 use crate::handler::user_handler::{
-    add_user_health_profile_handler, delete_medical_conditions_handler, get_current_user_handler,
-    get_user_health_profile_handler, get_user_preferences_handler,
-    update_medical_conditions_handler,
+    add_medical_conditions_handler, add_user_health_profile_handler,
+    delete_medical_conditions_handler, get_current_user_handler, get_user_health_profile_handler,
+    get_user_preferences_handler, update_medical_conditions_handler,
 };
 use crate::state::AppState;
 use crate::{handler::auth_handler, middleware::authmiddleware::auth_middleware};
@@ -37,6 +37,10 @@ impl UserController {
             .route(
                 "/health/medical_conditions/update",
                 put(update_medical_conditions_handler),
+            )
+            .route(
+                "/health/medical_conditions/add",
+                post(add_medical_conditions_handler),
             )
             .layer(axum::middleware::from_fn(auth_middleware));
 

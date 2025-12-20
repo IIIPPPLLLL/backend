@@ -1,3 +1,4 @@
+use crate::models::response::AddMedicalConditionsRequest;
 use crate::state::AppState;
 use axum::response::{IntoResponse, Json as JsonResponse};
 use axum::{Extension, Json, extract::State};
@@ -138,4 +139,49 @@ pub async fn update_medical_conditions_handler(
         "status": "success",
         "message": "Medical conditions updated successfully"
     })))
+}
+pub async fn add_medical_conditions_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<AddMedicalConditionsRequest>,
+) -> Result<JsonResponse<serde_json::Value>, (StatusCode, String)> {
+    if payload.medical_conditions.is_empty() {
+        return Ok(JsonResponse(serde_json::json!({
+            "status": "success",
+            "message": "No medical conditions provided"
+        })));
+    }
+
+    match state
+        .user_service
+        .add_medical_conditions(user_id, payload.medical_conditions)
+        .await
+    {
+        Ok(_) => Ok(JsonResponse(serde_json::json!({
+            "status": "success",
+            "message": "Medical conditions added successfully",
+            "user_id": user_id.to_string()
+        }))),
+
+        Err(e) => {
+            let error_msg = e.to_string();
+
+            if error_msg.contains("not found") {
+                return Err((StatusCode::NOT_FOUND, "User not found".to_string()));
+            }
+
+            if error_msg.contains("cannot be empty")
+                || error_msg.contains("too long")
+                || error_msg.contains("Serialization error")
+            {
+                return Err((StatusCode::BAD_REQUEST, error_msg));
+            }
+
+            eprintln!("Internal server error: {}", error_msg);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to add medical conditions".to_string(),
+            ))
+        }
+    }
 }

@@ -60,3 +60,9 @@ pub struct UpdateScheduleInfoRequest {
 pub struct UpdateShoppingItemRequest {
     pub purchased: Option<bool>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct AddMedicalConditionsRequest {
+    #[serde(default)]
+    pub medical_conditions: Vec<String>,
+}

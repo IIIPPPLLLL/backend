@@ -105,6 +105,88 @@ impl UserService {
         Ok(())
     }
 
+    pub async fn add_medical_conditions(
+        &self,
+        user_id: ObjectId,
+        medical_conditions: Vec<String>,
+    ) -> mongodb::error::Result<()> {
+        if medical_conditions.is_empty() {
+            return Ok(());
+        }
+
+        for condition in &medical_conditions {
+            if condition.trim().is_empty() {
+                return Err(mongodb::error::Error::custom(
+                    "Medical condition cannot be empty",
+                ));
+            }
+            if condition.len() > 200 {
+                return Err(mongodb::error::Error::custom(
+                    "Medical condition too long (max 200 characters)",
+                ));
+            }
+        }
+
+        let filter = doc! { "_id": user_id };
+
+        let update = doc! {
+            "$push": {
+                "health_profile.medical_conditions": {
+                    "$each": &medical_conditions
+                }
+            }
+        };
+
+        match self
+            .collection
+            .update_one(filter.clone(), update, None)
+            .await
+        {
+            Ok(result) if result.matched_count > 0 => {
+                if result.modified_count == 0 {
+                    log::debug!("User {}: Medical conditions already exist", user_id);
+                }
+                return Ok(());
+            }
+            Ok(_) => {
+                // User found but health_profile doesn't exist or push failed
+            }
+            Err(e) => {
+                log::warn!("Failed to push medical conditions: {}", e);
+            }
+        }
+
+        let health = Health {
+            height: 0.0,
+            weight: 0.0,
+            medical_conditions,
+        };
+
+        let update = doc! {
+            "$set": {
+                "health_profile": mongodb::bson::to_bson(&health)
+                    .map_err(|e| mongodb::error::Error::custom(format!("Serialization error: {}", e)))?
+            }
+        };
+
+        let result = self.collection.update_one(filter, update, None).await?;
+
+        if result.matched_count == 0 {
+            return Err(mongodb::error::Error::custom(format!(
+                "User with id {} not found",
+                user_id
+            )));
+        }
+
+        if result.modified_count == 0 {
+            log::warn!(
+                "User {}: Health profile update didn't modify document",
+                user_id
+            );
+        }
+
+        Ok(())
+    }
     pub async fn get_user_by_id(&self, id: ObjectId) -> mongodb::error::Result<Option<User>> {
         let filter = doc! { "_id": id };
         self.collection.find_one(filter, None).await

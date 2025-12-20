@@ -2217,6 +2217,7 @@ dependencies = [
  "futures-util",
  "hyper",
  "jsonwebtoken",
+ "log",
  "mongodb",
  "serde",
  "serde_json",
