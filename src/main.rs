@@ -1,4 +1,3 @@
-// main.rs - CLEAN
 mod controller;
 mod data;
 mod db;
@@ -7,18 +6,20 @@ mod middleware;
 mod models;
 mod services;
 mod state;
-use axum::Router;
+
+use axum::{Router, http::Method};
 use controller::user_controller::UserController;
 use db::mongo::connect;
 use dotenv::dotenv;
 use mongodb::{Collection, Database};
 use state::AppState;
 use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer}; // <- TAMBAHKAN INI
 
 use crate::{controller::schedule_controller::ScheduleController, data::seed_meals};
 use models::meals::Meal;
-#[tokio::main]
 
+#[tokio::main]
 async fn main() {
     dotenv().ok();
 
@@ -31,13 +32,27 @@ async fn main() {
 
     let state_for_router = state.clone();
 
+    // TAMBAHKAN CORS LAYER
+    let cors = CorsLayer::new()
+        .allow_origin(Any) // Untuk development, allow semua origin
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers(Any);
+
     let app = Router::new()
         .merge(UserController::routes())
         .merge(ScheduleController::routes())
+        .layer(cors) // <- APPLY CORS LAYER
         .with_state(state_for_router);
 
     let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("🚀 Server running at http://localhost:3000");
+    println!("🔗 CORS enabled for all origins (development only)");
 
     let count = state
         .utils_service
@@ -49,7 +64,6 @@ async fn main() {
 
     axum::serve(listener, app).await.unwrap();
 }
-
 async fn seed_if_empty(db: &Database) {
     let collection: Collection<Meal> = db.collection("meals");
 
