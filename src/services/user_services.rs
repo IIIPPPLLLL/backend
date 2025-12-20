@@ -1,4 +1,4 @@
-use crate::models::user::User;
+use crate::models::{health::Health, user::User};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use mongodb::{
     Collection,
@@ -50,8 +50,63 @@ impl UserService {
         }
     }
 
+    pub async fn get_health_profile(
+        &self,
+        user_id: ObjectId,
+    ) -> mongodb::error::Result<Option<Health>> {
+        let filter = doc! { "_id": user_id };
+        match self.collection.find_one(filter, None).await? {
+            Some(user) => Ok(user.health_profile),
+            None => Ok(None),
+        }
+    }
+
+    pub async fn add_health_profile(
+        &self,
+        user_id: ObjectId,
+        health: Health,
+    ) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "health_profile": mongodb::bson::to_bson(&health)?
+            }
+        };
+
+        self.collection.update_one(filter, update, None).await?;
+        Ok(())
+    }
+
+    pub async fn delete_medical_conditions(&self, user_id: ObjectId) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "health_profile.medical_conditions": []
+            }
+        };
+
+        self.collection.update_one(filter, update, None).await?;
+        Ok(())
+    }
+
+    pub async fn update_medical_conditions(
+        &self,
+        user_id: ObjectId,
+        medical_conditions: Vec<String>,
+    ) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "health_profile.medical_conditions": medical_conditions
+            }
+        };
+
+        self.collection.update_one(filter, update, None).await?;
+        Ok(())
+    }
+
     pub async fn get_user_by_id(&self, id: ObjectId) -> mongodb::error::Result<Option<User>> {
         let filter = doc! { "_id": id };
-        self.collection.find_one(filter, None).await // Langsung return User
+        self.collection.find_one(filter, None).await
     }
 }

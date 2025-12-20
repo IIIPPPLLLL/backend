@@ -83,14 +83,7 @@ impl UtilsService {
         let filter = doc! { "_id": user_id };
         let user = self.user_collection.find_one(filter, None).await?;
 
-        match user {
-            Some(user) => Ok(Some(FoodPreferences {
-                preferred_foods: user.food_preferences.preferred_foods,
-                allergies: user.food_preferences.allergies,
-                recommendations: user.food_preferences.recommendations,
-            })),
-            None => Ok(None),
-        }
+        Ok(user.and_then(|u| u.food_preferences))
     }
 
     pub async fn update_allergies(

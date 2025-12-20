@@ -18,20 +18,20 @@ pub struct User {
     pub password: String,
 
     #[serde(rename = "gender")]
-    pub gender: String,
+    pub gender: Option<String>,
 
     #[serde(rename = "age")]
-    pub age: i32,
+    pub age: Option<i32>,
 
     #[serde(rename = "physical_activity_level")]
-    pub physical_activity_level: String,
+    pub physical_activity_level: Option<String>,
 
     #[serde(rename = "goal")]
-    pub goal: String,
+    pub goal: Option<String>,
 
     #[serde(rename = "health_profile")]
-    pub health_profile: Health,
+    pub health_profile: Option<Health>,
 
     #[serde(rename = "food_preferences")]
-    pub food_preferences: FoodPreferences,
+    pub food_preferences: Option<FoodPreferences>,
 }
