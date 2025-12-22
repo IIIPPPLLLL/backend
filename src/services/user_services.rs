@@ -1,8 +1,9 @@
-use crate::models::{health::Health, user::User};
+use crate::models::{health::Health, request::UpdateHealthProfileRequest, user::User};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use mongodb::{
     Collection,
     bson::{doc, oid::ObjectId},
+    options::UpdateOptions,
 };
 
 #[derive(Clone)]
@@ -61,19 +62,35 @@ impl UserService {
         }
     }
 
-    pub async fn add_health_profile(
+    pub async fn update_health_profile(
         &self,
         user_id: ObjectId,
-        health: Health,
+        payload: UpdateHealthProfileRequest,
     ) -> mongodb::error::Result<()> {
-        let filter = doc! { "_id": user_id };
-        let update = doc! {
-            "$set": {
-                "health_profile": mongodb::bson::to_bson(&health)?
-            }
-        };
+        let mut set_doc = doc! {};
 
-        self.collection.update_one(filter, update, None).await?;
+        if let Some(height) = payload.height {
+            set_doc.insert("health_profile.height", height);
+        }
+
+        if let Some(weight) = payload.weight {
+            set_doc.insert("health_profile.weight", weight);
+        }
+
+        if let Some(conditions) = payload.medical_conditions {
+            set_doc.insert("health_profile.medical_conditions", conditions);
+        }
+
+        if set_doc.is_empty() {
+            return Ok(());
+        }
+
+        let update = doc! { "$set": set_doc };
+
+        self.collection
+            .update_one(doc! { "_id": user_id }, update, None)
+            .await?;
+
         Ok(())
     }
 
@@ -148,9 +165,7 @@ impl UserService {
                 }
                 return Ok(());
             }
-            Ok(_) => {
-                // User found but health_profile doesn't exist or push failed
-            }
+            Ok(_) => {}
             Err(e) => {
                 log::warn!("Failed to push medical conditions: {}", e);
             }
@@ -249,5 +264,23 @@ impl UserService {
                 Err(e)
             }
         }
+    }
+
+    pub async fn update_user_age(&self, user_id: ObjectId, age: i32) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "age": age,
+                "updated_at": mongodb::bson::DateTime::now()
+            }
+        };
+
+        let result = self.collection.update_one(filter, update, None).await?;
+
+        if result.matched_count == 0 {
+            return Err(mongodb::error::Error::custom("User not found"));
+        }
+
+        Ok(())
     }
 }

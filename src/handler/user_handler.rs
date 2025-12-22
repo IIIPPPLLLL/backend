@@ -1,4 +1,7 @@
-use crate::models::request::UpdateGenderRequest;
+use crate::models::request::{
+    UpdateAgeRequest, UpdateGenderRequest, UpdateHealthProfileRequest, UpdateHeightRequest,
+    UpdateWeightRequest,
+};
 use crate::models::response::AddMedicalConditionsRequest;
 use crate::state::AppState;
 use axum::response::{IntoResponse, Json as JsonResponse};
@@ -94,22 +97,26 @@ pub async fn get_user_health_profile_handler(
         None => Err(StatusCode::NOT_FOUND),
     }
 }
-pub async fn add_user_health_profile_handler(
+pub async fn update_user_health_profile_handler(
     State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
-    Json(health): Json<crate::models::health::Health>,
+    Json(payload): Json<UpdateHealthProfileRequest>,
 ) -> Result<JsonResponse<serde_json::Value>, StatusCode> {
     state
         .user_service
-        .add_health_profile(user_id, health)
+        .update_health_profile(user_id, payload)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Update health profile error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     Ok(JsonResponse(json!({
         "status": "success",
-        "message": "Health profile added successfully"
+        "message": "Health profile updated"
     })))
 }
+
 pub async fn delete_medical_conditions_handler(
     State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
@@ -187,6 +194,54 @@ pub async fn add_medical_conditions_handler(
     }
 }
 
+pub async fn update_user_age_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<UpdateAgeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if payload.age < 1 || payload.age > 120 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Age must be between 1 and 120 years".to_string(),
+        ));
+    }
+
+    match state
+        .user_service
+        .update_user_age(user_id, payload.age as i32)
+        .await
+    {
+        Ok(_) => Ok((
+            StatusCode::OK,
+            Json(json!({
+                "status": "success",
+                "message": "Age updated successfully",
+                "user_id": user_id.to_string(),
+                "age": payload.age,
+                "age_group": match payload.age {
+                    0..=12 => "child",
+                    13..=19 => "teenager",
+                    20..=39 => "young adult",
+                    40..=59 => "middle aged",
+                    _ => "senior",
+                }
+            })),
+        )),
+        Err(e) => {
+            let error_msg = e.to_string();
+
+            if error_msg.contains("not found") {
+                return Err((StatusCode::NOT_FOUND, "User not found".to_string()));
+            }
+
+            eprintln!("Error updating age: {}", error_msg);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to update age".to_string(),
+            ))
+        }
+    }
+}
 pub async fn update_gender_handler(
     State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
