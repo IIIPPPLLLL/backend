@@ -4,9 +4,9 @@ use crate::handler::preferences_handler::{
 };
 use crate::handler::user_handler::{
     delete_medical_conditions_handler, get_current_user_handler, get_user_health_profile_handler,
-    get_user_preferences_handler, update_gender_handler, update_medical_conditions_handler,
-    update_physical_activity_level_handler, update_user_age_handler,
-    update_user_health_profile_handler,
+    get_user_preferences_handler, update_gender_handler, update_goal_handler,
+    update_medical_conditions_handler, update_physical_activity_level_handler,
+    update_user_age_handler, update_user_health_profile_handler,
 };
 use crate::middleware::authmiddleware::auth_middleware;
 use crate::state::AppState;
@@ -43,9 +43,10 @@ impl UserController {
                 put(update_medical_conditions_handler),
             )
             .route(
-                "physical_activity/update",
+                "/physical_activity/update",
                 put(update_physical_activity_level_handler),
             )
+            .route("/goal/update", put(update_goal_handler))
             .route("/age/update", put(update_user_age_handler))
             .route("/gender/update", put(update_gender_handler))
             .layer(axum::middleware::from_fn(auth_middleware));

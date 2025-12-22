@@ -34,3 +34,8 @@ pub struct UpdateHealthProfileRequest {
 pub struct UpdatePhysicalActivityRequest {
     pub physical_activity_level: String,
 }
+
+#[derive(Deserialize)]
+pub struct UpdateGoalRequest {
+    pub goal: String,
+}

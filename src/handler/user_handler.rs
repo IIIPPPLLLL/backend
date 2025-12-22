@@ -1,6 +1,6 @@
 use crate::models::request::{
-    UpdateAgeRequest, UpdateGenderRequest, UpdateHealthProfileRequest, UpdateHeightRequest,
-    UpdatePhysicalActivityRequest, UpdateWeightRequest,
+    UpdateAgeRequest, UpdateGenderRequest, UpdateGoalRequest, UpdateHealthProfileRequest,
+    UpdateHeightRequest, UpdatePhysicalActivityRequest, UpdateWeightRequest,
 };
 use crate::models::response::AddMedicalConditionsRequest;
 use crate::state::AppState;
@@ -320,6 +320,33 @@ pub async fn update_physical_activity_level_handler(
         Json(serde_json::json!({
             "status": "success",
             "message": "Physical activity level updated"
+        })),
+    ))
+}
+pub async fn update_goal_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<UpdateGoalRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let goal = payload.goal.trim().to_lowercase();
+
+    state
+        .user_service
+        .update_goal(user_id, goal)
+        .await
+        .map_err(|e| {
+            eprintln!("Update goals error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to update goals".to_string(),
+            )
+        })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "success",
+            "message": "Goals updated"
         })),
     ))
 }

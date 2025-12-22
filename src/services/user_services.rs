@@ -304,4 +304,20 @@ impl UserService {
 
         Ok(())
     }
+    pub async fn update_goal(&self, user_id: ObjectId, goal: String) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "goal": goal,
+            }
+        };
+
+        let result = self.collection.update_one(filter, update, None).await?;
+
+        if result.matched_count == 0 {
+            return Err(mongodb::error::Error::custom("User not found"));
+        }
+
+        Ok(())
+    }
 }
