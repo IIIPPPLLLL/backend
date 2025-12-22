@@ -295,7 +295,7 @@ pub async fn update_physical_activity_level_handler(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let level = payload.physical_activity_level.trim().to_lowercase();
 
-    let allowed = ["Beginner", "Intermediate", "Advance"];
+    let allowed = ["beginner", "intermediate", "advance"];
     if !allowed.contains(&level.as_str()) {
         return Err((
             StatusCode::BAD_REQUEST,
