@@ -283,4 +283,25 @@ impl UserService {
 
         Ok(())
     }
+    pub async fn update_physical_activity_level(
+        &self,
+        user_id: ObjectId,
+        activity_level: String,
+    ) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": user_id };
+        let update = doc! {
+            "$set": {
+                "physical_activity_level": activity_level,
+                "updated_at": mongodb::bson::DateTime::now()
+            }
+        };
+
+        let result = self.collection.update_one(filter, update, None).await?;
+
+        if result.matched_count == 0 {
+            return Err(mongodb::error::Error::custom("User not found"));
+        }
+
+        Ok(())
+    }
 }

@@ -29,3 +29,8 @@ pub struct UpdateHealthProfileRequest {
     pub weight: Option<f64>,
     pub medical_conditions: Option<Vec<String>>,
 }
+
+#[derive(Deserialize)]
+pub struct UpdatePhysicalActivityRequest {
+    pub physical_activity_level: String,
+}

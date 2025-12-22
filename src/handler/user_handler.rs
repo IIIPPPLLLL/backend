@@ -1,6 +1,6 @@
 use crate::models::request::{
     UpdateAgeRequest, UpdateGenderRequest, UpdateHealthProfileRequest, UpdateHeightRequest,
-    UpdateWeightRequest,
+    UpdatePhysicalActivityRequest, UpdateWeightRequest,
 };
 use crate::models::response::AddMedicalConditionsRequest;
 use crate::state::AppState;
@@ -287,4 +287,39 @@ pub async fn update_gender_handler(
             ))
         }
     }
+}
+pub async fn update_physical_activity_level_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<UpdatePhysicalActivityRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let level = payload.physical_activity_level.trim().to_lowercase();
+
+    let allowed = ["Beginner", "Intermediate", "Advance"];
+    if !allowed.contains(&level.as_str()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "physical_activity_level must be one of: Beginner, Intermediate, Advance".to_string(),
+        ));
+    }
+
+    state
+        .user_service
+        .update_physical_activity_level(user_id, level)
+        .await
+        .map_err(|e| {
+            eprintln!("Update physical activity error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to update activity level".to_string(),
+            )
+        })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "success",
+            "message": "Physical activity level updated"
+        })),
+    ))
 }
