@@ -1,3 +1,4 @@
+use crate::models::request::UpdateGenderRequest;
 use crate::models::response::AddMedicalConditionsRequest;
 use crate::state::AppState;
 use axum::response::{IntoResponse, Json as JsonResponse};
@@ -181,6 +182,53 @@ pub async fn add_medical_conditions_handler(
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to add medical conditions".to_string(),
+            ))
+        }
+    }
+}
+
+pub async fn update_gender_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<UpdateGenderRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let gender = payload.gender.trim();
+    if gender.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Gender cannot be empty".to_string(),
+        ));
+    }
+
+    match state
+        .user_service
+        .add_user_gender(user_id, gender.to_string())
+        .await
+    {
+        Ok(_) => {
+            let json_response = serde_json::json!({
+                "status": "success",
+                "message": "Gender updated successfully",
+                "user_id": user_id.to_string(),
+                "gender": gender
+            });
+            Ok((StatusCode::OK, Json(json_response)))
+        }
+        Err(e) => {
+            let error_msg = e.to_string();
+
+            if error_msg.contains("not found") {
+                return Err((StatusCode::NOT_FOUND, "User not found".to_string()));
+            }
+
+            if error_msg.contains("Invalid gender") || error_msg.contains("cannot be empty") {
+                return Err((StatusCode::BAD_REQUEST, error_msg));
+            }
+
+            eprintln!("Error updating gender: {}", error_msg);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to update gender".to_string(),
             ))
         }
     }

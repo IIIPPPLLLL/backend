@@ -16,7 +16,10 @@ use state::AppState;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer}; // <- TAMBAHKAN INI
 
-use crate::{controller::schedule_controller::ScheduleController, data::seed_meals};
+use crate::{
+    controller::{auth_controller::AuthController, schedule_controller::ScheduleController},
+    data::seed_meals,
+};
 use models::meals::Meal;
 
 #[tokio::main]
@@ -46,6 +49,7 @@ async fn main() {
     let app = Router::new()
         .merge(UserController::routes())
         .merge(ScheduleController::routes())
+        .merge(AuthController::routes())
         .layer(cors)
         .with_state(state_for_router);
 
@@ -63,6 +67,7 @@ async fn main() {
 
     axum::serve(listener, app).await.unwrap();
 }
+
 async fn seed_if_empty(db: &Database) {
     let collection: Collection<Meal> = db.collection("meals");
 

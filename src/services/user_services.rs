@@ -191,4 +191,63 @@ impl UserService {
         let filter = doc! { "_id": id };
         self.collection.find_one(filter, None).await
     }
+
+    pub async fn add_user_gender(
+        &self,
+        id: ObjectId,
+        gender: String,
+    ) -> mongodb::error::Result<()> {
+        if gender.trim().is_empty() {
+            return Err(mongodb::error::Error::custom("Gender cannot be empty"));
+        }
+
+        let normalized_gender = gender.trim().to_lowercase();
+
+        let allowed_genders = vec![
+            "male".to_string(),
+            "female".to_string(),
+            "other".to_string(),
+            "prefer not to say".to_string(),
+        ];
+
+        if !allowed_genders.contains(&normalized_gender) {
+            return Err(mongodb::error::Error::custom(format!(
+                "Invalid gender '{}'. Allowed values: {}",
+                gender,
+                allowed_genders.join(", ")
+            )));
+        }
+
+        let filter = doc! { "_id": id };
+        let update = doc! {
+            "$set": {
+                "gender": &normalized_gender
+            }
+        };
+
+        let options = mongodb::options::UpdateOptions::builder()
+            .upsert(false)
+            .build();
+
+        match self.collection.update_one(filter, update, options).await {
+            Ok(result) => match (result.matched_count, result.modified_count) {
+                (0, _) => Err(mongodb::error::Error::custom(format!(
+                    "User with ID {} not found",
+                    id
+                ))),
+                (_, 0) => {
+                    println!("Info: Gender unchanged for user {}", id);
+                    Ok(())
+                }
+                _ => {
+                    println!("Updated gender for user {}", id);
+                    Ok(())
+                }
+            },
+            Err(e) => {
+                eprintln!("Database error updating gender for user {}: {}", id, e);
+                Err(e)
+            }
+        }
+    }
 }
