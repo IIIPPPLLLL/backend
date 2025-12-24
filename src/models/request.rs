@@ -39,3 +39,9 @@ pub struct UpdatePhysicalActivityRequest {
 pub struct UpdateGoalRequest {
     pub goal: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateFoodPreferencesRequest {
+    pub preferred_foods: Option<Vec<String>>,
+    pub allergies: Option<Vec<String>>,
+}

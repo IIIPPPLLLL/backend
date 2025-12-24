@@ -1,12 +1,14 @@
 use crate::models::{
     foodpreferences::FoodPreferences,
     meals::{self, Meal},
+    request::UpdateFoodPreferencesRequest,
     user::User,
 };
 use futures_util::TryStreamExt;
 use mongodb::{
     Collection,
     bson::{Bson, doc, oid::ObjectId, to_bson},
+    options::UpdateOptions,
 };
 #[derive(Clone)]
 pub struct UtilsService {
@@ -21,34 +23,48 @@ impl UtilsService {
             meals_collection,
         }
     }
-    //Preferences
-    pub async fn add_food_preferences(
+    pub async fn update_food_preferences(
         &self,
         user_id: ObjectId,
-        foods: FoodPreferences,
-    ) -> Result<(), mongodb::error::Error> {
-        let filter = doc! { "_id": user_id };
-        let user_exists = self.user_collection.find_one(filter.clone(), None).await?;
+        payload: UpdateFoodPreferencesRequest,
+    ) -> mongodb::error::Result<()> {
+        self.user_collection
+            .update_one(
+                doc! {
+                    "_id": user_id,
+                    "food_preferences": { "$exists": false }
+                },
+                doc! {
+                    "$set": {
+                        "food_preferences": {
+                            "preferred_foods": [],
+                            "allergies": [],
+                            "recommendations": []
+                        }
+                    }
+                },
+                None,
+            )
+            .await?;
 
-        if user_exists.is_none() {
-            return Err(mongodb::error::Error::custom("User not found"));
+        let mut set_doc = doc! {};
+
+        if let Some(foods) = payload.preferred_foods {
+            set_doc.insert("food_preferences.preferred_foods", foods);
         }
 
-        let update = doc! {
-            "$set": {
-                "preferred_foods": foods.preferred_foods,
-                "allergies": foods.allergies
-            }
-        };
+        if let Some(allergies) = payload.allergies {
+            set_doc.insert("food_preferences.allergies", allergies);
+        }
 
-        let result = self
-            .user_collection
-            .update_one(filter, update, None)
+        if set_doc.is_empty() {
+            return Ok(());
+        }
+
+        self.user_collection
+            .update_one(doc! { "_id": user_id }, doc! { "$set": set_doc }, None)
             .await?;
-        println!(
-            "Updated {} document for user: {:?}",
-            result.modified_count, user_id
-        );
+
         Ok(())
     }
 

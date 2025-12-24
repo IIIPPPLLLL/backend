@@ -1,4 +1,5 @@
 use crate::models::foodpreferences::FoodPreferences;
+use crate::models::request::UpdateFoodPreferencesRequest;
 use crate::state::AppState;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
@@ -10,14 +11,16 @@ use mongodb::bson::oid::ObjectId;
 pub async fn add_food_preferences_handler(
     State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
-    Json(food_preferences): Json<FoodPreferences>,
+    Json(food_preferences): Json<UpdateFoodPreferencesRequest>,
 ) -> Result<JsonResponse<serde_json::Value>, StatusCode> {
     state
         .utils_service
-        .add_food_preferences(user_id, food_preferences)
+        .update_food_preferences(user_id, food_preferences)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
+        .map_err(|e| {
+            eprintln!("Update food preferences error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     Ok(JsonResponse(serde_json::json!({
         "status": "success",
         "message": "Food preferences added successfully"

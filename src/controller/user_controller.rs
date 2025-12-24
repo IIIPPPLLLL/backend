@@ -19,7 +19,7 @@ pub struct UserController;
 impl UserController {
     pub fn routes() -> Router<AppState> {
         let auth_routes = Router::new()
-            .route("/preferences/food", post(add_food_preferences_handler))
+            .route("/preferences/food", patch(add_food_preferences_handler))
             .route("/preferences", get(get_user_preferences_handler))
             .route("/preferences/remove", post(remove_food_preferences_handler))
             .route(
