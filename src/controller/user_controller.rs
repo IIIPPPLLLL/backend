@@ -1,4 +1,6 @@
-use crate::handler::meal_handler::{add_meal_handler, get_all_meals_handler};
+use crate::handler::meal_handler::{
+    add_meal_handler, get_all_meals_handler, get_meal_by_id_handler,
+};
 use crate::handler::preferences_handler::{
     add_food_preferences_handler, get_recommendations_handler, remove_food_preferences_handler,
 };
@@ -28,6 +30,7 @@ impl UserController {
             )
             .route("/meals/getAll", get(get_all_meals_handler))
             .route("/meals/add", post(add_meal_handler))
+            .route("/meals/{id}", get(get_meal_by_id_handler))
             .route("/profile", get(get_current_user_handler))
             .route("/health/profile", get(get_user_health_profile_handler))
             .route(

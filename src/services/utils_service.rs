@@ -226,4 +226,11 @@ impl UtilsService {
         let cursor = self.meals_collection.find(None, None).await?;
         cursor.try_collect().await
     }
+    pub async fn get_meal_by_id(
+        &self,
+        meal_id: ObjectId,
+    ) -> Result<Option<Meal>, mongodb::error::Error> {
+        let filter = doc! { "_id": meal_id };
+        self.meals_collection.find_one(filter, None).await
+    }
 }

@@ -1,6 +1,7 @@
 use crate::models::meals::Meal;
 use crate::state::AppState;
 use axum::extract::Json;
+use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -74,4 +75,36 @@ pub async fn add_meal_handler(
         "message": "Meal added successfully",
         "meal_id": meal_id.to_string()
     })))
+}
+
+pub async fn get_meal_by_id_handler(
+    State(state): State<AppState>,
+    Path(meal_id): Path<String>,
+) -> Result<JsonResponse<serde_json::Value>, StatusCode> {
+    let meal_object_id =
+        mongodb::bson::oid::ObjectId::parse_str(&meal_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    match state.utils_service.get_meal_by_id(meal_object_id).await {
+        Ok(Some(meal)) => {
+            let response_meal = MealResponse {
+                id: meal.id.map(|id| id.to_string()).unwrap_or_default(),
+                name: meal.name,
+                ingredients: meal.ingredients,
+                category: meal.category,
+                calories: meal.calories,
+                image_url: meal.image_url,
+            };
+
+            Ok(JsonResponse(json!({
+                "status": "success",
+                "message": "Meal retrieved successfully",
+                "data": response_meal
+            })))
+        }
+        Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            eprintln!("Error getting meal by ID: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
