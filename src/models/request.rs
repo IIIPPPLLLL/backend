@@ -53,3 +53,9 @@ pub struct CreateEatScheduleRequest {
     pub meal_id: String,
     pub notes: Option<String>,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct DateRangeRequest {
+    pub start_date: String, // Format: YYYY-MM-DD
+    pub end_date: String,   // Format: YYYY-MM-DD
+}

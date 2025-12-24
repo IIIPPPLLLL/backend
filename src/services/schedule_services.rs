@@ -332,4 +332,54 @@ impl ScheduleService {
             .await?;
         Ok(())
     }
+    pub async fn get_user_eat_schedules(
+        &self,
+        user_id: ObjectId,
+    ) -> Result<Vec<EatSchedule>, mongodb::error::Error> {
+        println!("📋 Getting Eat schedules for user: {:?}", user_id);
+
+        let filter = doc! { "user_id": user_id };
+        let cursor = self.eat_schedule_collection.find(filter, None).await?;
+        let schedules: Vec<EatSchedule> = cursor.try_collect().await?;
+
+        println!("✅ Found {} schedules", schedules.len());
+        Ok(schedules)
+    }
+    pub async fn get_eat_schedule_by_id(
+        &self,
+        schedule_id: ObjectId,
+    ) -> Result<Option<EatSchedule>, mongodb::error::Error> {
+        let filter = doc! { "_id": schedule_id };
+        self.eat_schedule_collection.find_one(filter, None).await
+    }
+    pub async fn get_schedules_by_date(
+        &self,
+        user_id: ObjectId,
+        date: chrono::NaiveDate,
+    ) -> Result<Vec<EatSchedule>, mongodb::error::Error> {
+        let filter = doc! {
+            "user_id": user_id,
+            "date": date.to_string()
+        };
+
+        let cursor = self.eat_schedule_collection.find(filter, None).await?;
+        cursor.try_collect().await
+    }
+    pub async fn get_schedules_by_date_range(
+        &self,
+        user_id: ObjectId,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Result<Vec<EatSchedule>, mongodb::error::Error> {
+        let filter = doc! {
+            "user_id": user_id,
+            "date": {
+                "$gte": start_date.to_string(),
+                "$lte": end_date.to_string()
+            }
+        };
+
+        let cursor = self.eat_schedule_collection.find(filter, None).await?;
+        cursor.try_collect().await
+    }
 }

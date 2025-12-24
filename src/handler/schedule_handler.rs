@@ -1,6 +1,6 @@
 use crate::{
     models::{
-        request::CreateEatScheduleRequest,
+        request::{CreateEatScheduleRequest, DateRangeRequest},
         response::{
             CreateScheduleRequest, CreateShoppingItem, UpdateScheduleInfoRequest,
             UpdateShoppingItemRequest,
@@ -636,4 +636,193 @@ pub async fn create_eat_schedule_handler(
         "status": "success",
         "message": "Eat schedule created"
     })))
+}
+
+pub async fn get_user_eat_schedules_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!("📋 Request: Get eat schedules for user {}", user_id);
+
+    match state.schedule_service.get_user_eat_schedules(user_id).await {
+        Ok(schedules) => {
+            let response = json!({
+                "status": "success",
+                "message": format!("Found {} eat schedules", schedules.len()),
+                "user_id": user_id.to_string(),
+                "count": schedules.len(),
+                "data": schedules
+            });
+
+            Ok((StatusCode::OK, Json(response)))
+        }
+        Err(e) => {
+            let error_msg = e.to_string();
+            eprintln!("❌ Error getting eat schedules: {}", error_msg);
+
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to fetch eat schedules".to_string(),
+            ))
+        }
+    }
+}
+
+pub async fn get_eat_schedule_by_id_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Path(schedule_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!(
+        "📋 Request: Get eat schedule {} for user {}",
+        schedule_id, user_id
+    );
+
+    let object_id = match ObjectId::parse_str(&schedule_id) {
+        Ok(id) => id,
+        Err(_) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid schedule ID format".to_string(),
+            ));
+        }
+    };
+
+    match state
+        .schedule_service
+        .get_eat_schedule_by_id(object_id)
+        .await
+    {
+        Ok(Some(schedule)) => {
+            if schedule.user_id != user_id {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    "You don't have permission to access this schedule".to_string(),
+                ));
+            }
+
+            let response = json!({
+                "status": "success",
+                "message": "Schedule found",
+                "data": schedule
+            });
+
+            Ok((StatusCode::OK, Json(response)))
+        }
+        Ok(None) => Err((StatusCode::NOT_FOUND, "Schedule not found".to_string())),
+        Err(e) => {
+            let error_msg = e.to_string();
+            eprintln!("❌ Error getting schedule: {}", error_msg);
+
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to fetch schedule".to_string(),
+            ))
+        }
+    }
+}
+
+pub async fn get_today_schedules_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!("📅 Request: Get today's schedules for user {}", user_id);
+
+    let today = chrono::Utc::now().date_naive();
+
+    match state
+        .schedule_service
+        .get_schedules_by_date(user_id, today)
+        .await
+    {
+        Ok(schedules) => {
+            let response = json!({
+                "status": "success",
+                "message": format!("Found {} schedules for today", schedules.len()),
+                "user_id": user_id.to_string(),
+                "date": today.to_string(),
+                "count": schedules.len(),
+                "data": schedules
+            });
+
+            Ok((StatusCode::OK, Json(response)))
+        }
+        Err(e) => {
+            let error_msg = e.to_string();
+            eprintln!("❌ Error getting today's schedules: {}", error_msg);
+
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to fetch today's schedules".to_string(),
+            ))
+        }
+    }
+}
+
+pub async fn get_schedules_by_date_range_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<DateRangeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!(
+        "📅 Request: Get schedules from {} to {} for user {}",
+        payload.start_date, payload.end_date, user_id
+    );
+
+    let start_date = match chrono::NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d") {
+        Ok(date) => date,
+        Err(_) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid start date format. Use YYYY-MM-DD".to_string(),
+            ));
+        }
+    };
+
+    let end_date = match chrono::NaiveDate::parse_from_str(&payload.end_date, "%Y-%m-%d") {
+        Ok(date) => date,
+        Err(_) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid end date format. Use YYYY-MM-DD".to_string(),
+            ));
+        }
+    };
+
+    if start_date > end_date {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Start date must be before or equal to end date".to_string(),
+        ));
+    }
+
+    match state
+        .schedule_service
+        .get_schedules_by_date_range(user_id, start_date, end_date)
+        .await
+    {
+        Ok(schedules) => {
+            let response = json!({
+                "status": "success",
+                "message": format!("Found {} schedules from {} to {}",
+                    schedules.len(), start_date, end_date),
+                "user_id": user_id.to_string(),
+                "start_date": start_date.to_string(),
+                "end_date": end_date.to_string(),
+                "count": schedules.len(),
+                "data": schedules
+            });
+
+            Ok((StatusCode::OK, Json(response)))
+        }
+        Err(e) => {
+            let error_msg = e.to_string();
+            eprintln!("❌ Error getting schedules by date range: {}", error_msg);
+
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to fetch schedules".to_string(),
+            ))
+        }
+    }
 }
