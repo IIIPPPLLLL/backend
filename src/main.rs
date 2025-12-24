@@ -6,7 +6,7 @@ mod middleware;
 mod models;
 mod services;
 mod state;
-
+mod utils;
 use axum::{Router, http::Method};
 use controller::user_controller::UserController;
 use db::mongo::connect;
@@ -14,13 +14,12 @@ use dotenv::dotenv;
 use mongodb::{Collection, Database};
 use state::AppState;
 use tokio::net::TcpListener;
-use tower_http::cors::{Any, CorsLayer}; // <- TAMBAHKAN INI
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
     controller::{auth_controller::AuthController, schedule_controller::ScheduleController},
-    data::seed_meals,
+    utils::seed_meal::smart_seed_meals,
 };
-use models::meals::Meal;
 
 #[tokio::main]
 async fn main() {
@@ -29,8 +28,10 @@ async fn main() {
     // Connect to MongoDB
     let db = connect().await;
 
-    seed_if_empty(&db).await;
-
+    match smart_seed_meals(&db).await {
+        Ok(_) => println!("✅ Meal database sync completed"),
+        Err(e) => eprintln!("❌ Meal database sync failed: {}", e),
+    }
     let state = AppState::new(db);
 
     let state_for_router = state.clone();
@@ -66,33 +67,4 @@ async fn main() {
     println!("🍽️  Database has {} meals", count);
 
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn seed_if_empty(db: &Database) {
-    let collection: Collection<Meal> = db.collection("meals");
-
-    let count = match collection.count_documents(None, None).await {
-        Ok(count) => count,
-        Err(_) => {
-            println!("⚠️  Could not check meals collection");
-            return;
-        }
-    };
-
-    if count == 0 {
-        println!("🌱 Seeding meals database...");
-
-        let meals = seed_meals::get_seed_meals();
-
-        let chunks = meals.chunks(10);
-        for chunk in chunks {
-            if let Err(e) = collection.insert_many(chunk.to_vec(), None).await {
-                eprintln!("❌ Failed to insert chunk: {}", e);
-            }
-        }
-
-        println!("✅ Seeded {} meals", meals.len());
-    } else {
-        println!("📊 Meals collection already has {} entries", count);
-    }
 }

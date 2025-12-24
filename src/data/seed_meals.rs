@@ -1,589 +1,516 @@
 use crate::models::meals::Meal;
+use crate::utils::pexels::get_meal_image;
 
-// data/seed_meals.rs
-pub fn get_seed_meals() -> Vec<Meal> {
+pub async fn get_seed_meals() -> Vec<Meal> {
+    let mut meals = Vec::new();
+
+    // =============== INDONESIAN FOOD ===============
+    meals.extend(get_indonesian_meals().await);
+    
+    // =============== ITALIAN FOOD ===============
+    meals.extend(get_italian_meals().await);
+    
+    // =============== JAPANESE FOOD ===============
+    meals.extend(get_japanese_meals().await);
+    
+    // =============== MEXICAN FOOD ===============
+    meals.extend(get_mexican_meals().await);
+    
+    // =============== DESSERTS INTERNATIONAL ===============
+    meals.extend(get_international_desserts().await);
+    
+    // =============== HEALTHY OPTIONS ===============
+    meals.extend(get_healthy_meals().await);
+
+    meals
+}
+
+// =============== INDONESIAN SECTION ===============
+async fn get_indonesian_meals() -> Vec<Meal> {
     vec![
-        // 🍚 Indonesian Food
-        Meal {
-            id: None,
-            name: "Nasi Goreng".to_string(),
-            ingredients: vec![
-                "nasi".to_string(),
-                "telur".to_string(),
-                "ayam".to_string(),
-                "bawang merah".to_string(),
-                "kecap manis".to_string(),
+        create_meal(
+            "Nasi Goreng",
+            "Main Course",
+            Some(400),
+            vec![
+                "Cooked rice".to_string(),
+                "Eggs".to_string(),
+                "Chicken breast".to_string(),
+                "Shrimp".to_string(),
+                "Carrots".to_string(),
+                "Green peas".to_string(),
+                "Spring onions".to_string(),
+                "Garlic".to_string(),
+                "Shallots".to_string(),
+                "Sweet soy sauce".to_string(),
+                "Fish sauce".to_string(),
+                "Vegetable oil".to_string(),
+                "Salt and pepper".to_string(),
             ],
-            category: "Indonesian".to_string(),
-            calories: Some(450),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian fried rice with chicken and egg".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Rendang".to_string(),
-            ingredients: vec![
-                "daging sapi".to_string(),
-                "santan".to_string(),
-                "serai".to_string(),
-                "lengkuas".to_string(),
-                "daun jeruk".to_string(),
-                "cabe merah".to_string(),
+            "Indonesian fried rice with eggs, chicken, shrimp, and vegetables, seasoned with sweet soy sauce.",
+        ).await,
+        
+        create_meal(
+            "Rendang",
+            "Main Course",
+            Some(450),
+            vec![
+                "Beef chuck".to_string(),
+                "Coconut milk".to_string(),
+                "Lemongrass".to_string(),
+                "Galangal".to_string(),
+                "Turmeric leaves".to_string(),
+                "Kaffir lime leaves".to_string(),
+                "Candlenuts".to_string(),
+                "Garlic".to_string(),
+                "Shallots".to_string(),
+                "Chilies".to_string(),
+                "Ginger".to_string(),
+                "Coriander".to_string(),
+                "Cumin".to_string(),
+                "Turmeric powder".to_string(),
+                "Tamarind".to_string(),
+                "Palm sugar".to_string(),
+                "Salt".to_string(),
             ],
-            category: "Indonesian".to_string(),
-            calories: Some(520),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Spicy Indonesian beef stew slow-cooked in coconut milk".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Sate Ayam".to_string(),
-            ingredients: vec![
-                "daging ayam".to_string(),
-                "kacang tanah".to_string(),
-                "kecap manis".to_string(),
-                "bawang merah".to_string(),
-                "jeruk limau".to_string(),
+            "Spicy slow-cooked beef curry from West Sumatra, cooked in coconut milk and rich spices until tender.",
+        ).await,
+        
+        create_meal(
+            "Sate Ayam",
+            "Appetizer",
+            Some(250),
+            vec![
+                "Chicken thighs".to_string(),
+                "Bamboo skewers".to_string(),
+                "Sweet soy sauce".to_string(),
+                "Peanut butter".to_string(),
+                "Brown sugar".to_string(),
+                "Lime juice".to_string(),
+                "Garlic".to_string(),
+                "Shallots".to_string(),
+                "Coriander".to_string(),
+                "Cumin".to_string(),
+                "Turmeric powder".to_string(),
+                "Vegetable oil".to_string(),
+                "Salt".to_string(),
+                "Cucumber".to_string(),
+                "Onion".to_string(),
             ],
-            category: "Indonesian".to_string(),
-            calories: Some(320),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian chicken skewers with peanut sauce".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Gado-gado".to_string(),
-            ingredients: vec![
-                "sayuran".to_string(),
-                "tahu".to_string(),
-                "tempe".to_string(),
-                "telur".to_string(),
-                "saus kacang".to_string(),
-                "kerupuk".to_string(),
-            ],
-            category: "Indonesian".to_string(),
-            calories: Some(280),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian vegetable salad with peanut sauce".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Soto Ayam".to_string(),
-            ingredients: vec![
-                "ayam".to_string(),
-                "soun".to_string(),
-                "kol".to_string(),
-                "seledri".to_string(),
-                "bawang goreng".to_string(),
-                "kunyit".to_string(),
-            ],
-            category: "Indonesian".to_string(),
-            calories: Some(300),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian chicken soup with turmeric".to_string()),
-        },
-        // 🍜 Asian Cuisine
-        Meal {
-            id: None,
-            name: "Pad Thai".to_string(),
-            ingredients: vec![
-                "rice noodles".to_string(),
-                "shrimp".to_string(),
-                "tofu".to_string(),
-                "bean sprouts".to_string(),
-                "peanuts".to_string(),
-                "tamarind sauce".to_string(),
-            ],
-            category: "Thai".to_string(),
-            calories: Some(400),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1559314809-2b99056a8c4a?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Stir-fried rice noodles with shrimp and peanuts".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Korean Bibimbap".to_string(),
-            ingredients: vec![
-                "rice".to_string(),
-                "beef".to_string(),
-                "spinach".to_string(),
-                "carrots".to_string(),
-                "mushrooms".to_string(),
-                "fried egg".to_string(),
-                "gochujang".to_string(),
-            ],
-            category: "Korean".to_string(),
-            calories: Some(480),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1447279506476-3faec8071eee?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Korean mixed rice with vegetables and beef".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Japanese Ramen".to_string(),
-            ingredients: vec![
-                "ramen noodles".to_string(),
-                "pork belly".to_string(),
-                "boiled egg".to_string(),
-                "nori".to_string(),
-                "bamboo shoots".to_string(),
-                "spring onions".to_string(),
-            ],
-            category: "Japanese".to_string(),
-            calories: Some(520),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Japanese noodle soup with pork and egg".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Vietnamese Pho".to_string(),
-            ingredients: vec![
-                "rice noodles".to_string(),
-                "beef broth".to_string(),
-                "beef slices".to_string(),
-                "bean sprouts".to_string(),
-                "basil".to_string(),
-                "lime".to_string(),
-            ],
-            category: "Vietnamese".to_string(),
-            calories: Some(350),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Vietnamese noodle soup with beef and herbs".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Chinese Dim Sum".to_string(),
-            ingredients: vec![
-                "shrimp".to_string(),
-                "pork".to_string(),
-                "mushrooms".to_string(),
-                "bamboo".to_string(),
-                "wonton wrappers".to_string(),
-            ],
-            category: "Chinese".to_string(),
-            calories: Some(280),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Assorted Chinese dumplings and small dishes".to_string()),
-        },
-        // 🥗 Healthy & Salads
-        Meal {
-            id: None,
-            name: "Grilled Chicken Salad".to_string(),
-            ingredients: vec![
-                "chicken breast".to_string(),
-                "lettuce".to_string(),
-                "tomato".to_string(),
-                "cucumber".to_string(),
-                "olive oil".to_string(),
-                "lemon".to_string(),
-            ],
-            category: "Salad".to_string(),
-            calories: Some(350),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Fresh salad with grilled chicken breast".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Quinoa Bowl".to_string(),
-            ingredients: vec![
-                "quinoa".to_string(),
-                "avocado".to_string(),
-                "chickpeas".to_string(),
-                "spinach".to_string(),
-                "cherry tomatoes".to_string(),
-                "lemon dressing".to_string(),
-            ],
-            category: "Healthy".to_string(),
-            calories: Some(380),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Nutritious quinoa bowl with fresh vegetables".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Salmon with Vegetables".to_string(),
-            ingredients: vec![
-                "salmon fillet".to_string(),
-                "broccoli".to_string(),
-                "carrots".to_string(),
-                "asparagus".to_string(),
-                "olive oil".to_string(),
-                "lemon".to_string(),
-            ],
-            category: "Seafood".to_string(),
-            calories: Some(420),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Baked salmon with roasted vegetables".to_string()),
-        },
-        // 🍕 Western Food
-        Meal {
-            id: None,
-            name: "Pepperoni Pizza".to_string(),
-            ingredients: vec![
-                "pizza dough".to_string(),
-                "tomato sauce".to_string(),
-                "mozzarella".to_string(),
-                "pepperoni".to_string(),
-                "oregano".to_string(),
-            ],
-            category: "Italian".to_string(),
-            calories: Some(680),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Classic pepperoni pizza with mozzarella".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Beef Burger".to_string(),
-            ingredients: vec![
-                "beef patty".to_string(),
-                "burger bun".to_string(),
-                "cheese".to_string(),
-                "lettuce".to_string(),
-                "tomato".to_string(),
-                "onion".to_string(),
-                "special sauce".to_string(),
-            ],
-            category: "American".to_string(),
-            calories: Some(650),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Juicy beef burger with cheese and vegetables".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Spaghetti Carbonara".to_string(),
-            ingredients: vec![
-                "spaghetti".to_string(),
-                "eggs".to_string(),
-                "parmesan".to_string(),
-                "pancetta".to_string(),
-                "black pepper".to_string(),
-                "garlic".to_string(),
-            ],
-            category: "Italian".to_string(),
-            calories: Some(550),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1600803907087-f56d462fd26b?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Creamy Italian pasta with eggs and pancetta".to_string()),
-        },
-        // 🌱 Vegan & Vegetarian
-        Meal {
-            id: None,
-            name: "Tofu Stir Fry".to_string(),
-            ingredients: vec![
-                "tofu".to_string(),
-                "bell peppers".to_string(),
-                "broccoli".to_string(),
-                "carrots".to_string(),
-                "soy sauce".to_string(),
-                "ginger".to_string(),
-            ],
-            category: "Vegan".to_string(),
-            calories: Some(320),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Stir-fried tofu with mixed vegetables".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Vegetable Lasagna".to_string(),
-            ingredients: vec![
-                "lasagna noodles".to_string(),
-                "spinach".to_string(),
-                "ricotta".to_string(),
-                "tomato sauce".to_string(),
-                "zucchini".to_string(),
-                "eggplant".to_string(),
-            ],
-            category: "Vegetarian".to_string(),
-            calories: Some(380),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Layered pasta with vegetables and cheese".to_string()),
-        },
-        // 🍣 Seafood
-        Meal {
-            id: None,
-            name: "Shrimp Scampi".to_string(),
-            ingredients: vec![
-                "shrimp".to_string(),
-                "linguine".to_string(),
-                "garlic".to_string(),
-                "butter".to_string(),
-                "white wine".to_string(),
-                "parsley".to_string(),
-            ],
-            category: "Seafood".to_string(),
-            calories: Some(480),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Garlic butter shrimp with pasta".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Fish Tacos".to_string(),
-            ingredients: vec![
-                "white fish".to_string(),
-                "corn tortillas".to_string(),
-                "cabbage slaw".to_string(),
-                "lime crema".to_string(),
-                "avocado".to_string(),
-                "cilantro".to_string(),
-            ],
-            category: "Mexican".to_string(),
-            calories: Some(350),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Crispy fish tacos with fresh toppings".to_string()),
-        },
-        // 🥘 Soups & Stews
-        Meal {
-            id: None,
-            name: "Tomato Basil Soup".to_string(),
-            ingredients: vec![
-                "tomatoes".to_string(),
-                "basil".to_string(),
-                "onion".to_string(),
-                "garlic".to_string(),
-                "cream".to_string(),
-            ],
-            category: "Soup".to_string(),
-            calories: Some(180),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Creamy tomato soup with fresh basil".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Beef Stew".to_string(),
-            ingredients: vec![
-                "beef chuck".to_string(),
-                "potatoes".to_string(),
-                "carrots".to_string(),
-                "onion".to_string(),
-                "red wine".to_string(),
-                "beef broth".to_string(),
-            ],
-            category: "Stew".to_string(),
-            calories: Some(320),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Hearty beef stew with vegetables".to_string()),
-        },
-        // 🥪 Sandwiches
-        Meal {
-            id: None,
-            name: "Club Sandwich".to_string(),
-            ingredients: vec![
-                "turkey".to_string(),
-                "bacon".to_string(),
-                "lettuce".to_string(),
-                "tomato".to_string(),
-                "mayonnaise".to_string(),
-                "bread".to_string(),
-            ],
-            category: "Sandwich".to_string(),
-            calories: Some(420),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1481070555726-e2fe8357725c?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Triple-decker turkey and bacon sandwich".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Chicken Caesar Wrap".to_string(),
-            ingredients: vec![
-                "chicken".to_string(),
-                "romaine lettuce".to_string(),
-                "parmesan".to_string(),
-                "caesar dressing".to_string(),
-                "croutons".to_string(),
-                "tortilla".to_string(),
-            ],
-            category: "Wrap".to_string(),
-            calories: Some(380),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Caesar salad wrap with grilled chicken".to_string()),
-        },
-        // 🥞 Breakfast
-        Meal {
-            id: None,
-            name: "Pancakes".to_string(),
-            ingredients: vec![
-                "flour".to_string(),
-                "eggs".to_string(),
-                "milk".to_string(),
-                "butter".to_string(),
-                "maple syrup".to_string(),
-            ],
-            category: "Breakfast".to_string(),
-            calories: Some(380),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Fluffy pancakes with maple syrup".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Avocado Toast".to_string(),
-            ingredients: vec![
-                "sourdough bread".to_string(),
-                "avocado".to_string(),
-                "eggs".to_string(),
-                "everything seasoning".to_string(),
-                "lemon".to_string(),
-            ],
-            category: "Breakfast".to_string(),
-            calories: Some(320),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Avocado toast with poached eggs".to_string()),
-        },
-        // 🍛 Rice Dishes
-        Meal {
-            id: None,
-            name: "Spanish Paella".to_string(),
-            ingredients: vec![
-                "rice".to_string(),
-                "shrimp".to_string(),
-                "mussels".to_string(),
-                "clams".to_string(),
-                "chorizo".to_string(),
-                "saffron".to_string(),
-            ],
-            category: "Spanish".to_string(),
-            calories: Some(520),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Spanish seafood rice dish with saffron".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Indian Biryani".to_string(),
-            ingredients: vec![
-                "basmati rice".to_string(),
-                "chicken".to_string(),
-                "yogurt".to_string(),
-                "saffron".to_string(),
-                "onions".to_string(),
-                "spices".to_string(),
-            ],
-            category: "Indian".to_string(),
-            calories: Some(460),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Fragrant Indian rice dish with chicken".to_string()),
-        },
-        // Add 20+ more meals here...
-        Meal {
-            id: None,
-            name: "Mie Goreng".to_string(),
-            ingredients: vec!["mie".to_string(), "ayam".to_string(), "sayur".to_string()],
-            category: "Indonesian".to_string(),
-            calories: Some(380),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian fried noodles".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Bakso".to_string(),
-            ingredients: vec![
-                "daging sapi".to_string(),
-                "tahu".to_string(),
-                "mie".to_string(),
-            ],
-            category: "Indonesian".to_string(),
-            calories: Some(280),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian meatball soup".to_string()),
-        },
-        Meal {
-            id: None,
-            name: "Martabak".to_string(),
-            ingredients: vec![
-                "telur".to_string(),
-                "daging".to_string(),
-                "bawang".to_string(),
-            ],
-            category: "Indonesian".to_string(),
-            calories: Some(420),
-            image_url: Some(
-                "https://images.unsplash.com/photo-1484980972926-edee96e0960d?w=800&fit=crop"
-                    .to_string(),
-            ),
-            description: Some("Indonesian stuffed pancake".to_string()),
-        },
+            "Grilled chicken skewers served with peanut sauce, rice cakes, cucumber, and onion.",
+        ).await,
     ]
+}
+
+// =============== ITALIAN SECTION ===============
+async fn get_italian_meals() -> Vec<Meal> {
+    vec![
+        create_meal(
+            "Spaghetti Carbonara",
+            "Main Course",
+            Some(550),
+            vec![
+                "Spaghetti pasta".to_string(),
+                "Pancetta or guanciale".to_string(),
+                "Eggs".to_string(),
+                "Pecorino Romano cheese".to_string(),
+                "Parmigiano Reggiano".to_string(),
+                "Black pepper".to_string(),
+                "Salt".to_string(),
+                "Garlic".to_string(),
+                "Extra virgin olive oil".to_string(),
+            ],
+            "Classic Roman pasta dish with eggs, cheese, pancetta, and black pepper.",
+        ).await,
+        
+        create_meal(
+            "Margherita Pizza",
+            "Main Course",
+            Some(850),
+            vec![
+                "Pizza dough".to_string(),
+                "San Marzano tomatoes".to_string(),
+                "Fresh mozzarella".to_string(),
+                "Fresh basil".to_string(),
+                "Extra virgin olive oil".to_string(),
+                "Salt".to_string(),
+                "Active dry yeast".to_string(),
+                "Sugar".to_string(),
+                "Water".to_string(),
+                "Flour".to_string(),
+            ],
+            "Neapolitan pizza with tomato, mozzarella, fresh basil, and olive oil.",
+        ).await,
+        
+        create_meal(
+            "Tiramisu",
+            "Dessert",
+            Some(350),
+            vec![
+                "Ladyfinger cookies".to_string(),
+                "Mascarpone cheese".to_string(),
+                "Eggs".to_string(),
+                "Sugar".to_string(),
+                "Strong espresso coffee".to_string(),
+                "Cocoa powder".to_string(),
+                "Marsala wine".to_string(),
+                "Vanilla extract".to_string(),
+            ],
+            "Classic Italian dessert made of ladyfingers dipped in coffee, layered with mascarpone cream.",
+        ).await,
+        
+        create_meal(
+            "Lasagna",
+            "Main Course",
+            Some(650),
+            vec![
+                "Lasagna noodles".to_string(),
+                "Ground beef".to_string(),
+                "Italian sausage".to_string(),
+                "Marinara sauce".to_string(),
+                "Ricotta cheese".to_string(),
+                "Mozzarella cheese".to_string(),
+                "Parmesan cheese".to_string(),
+                "Eggs".to_string(),
+                "Onion".to_string(),
+                "Garlic".to_string(),
+                "Italian seasoning".to_string(),
+                "Salt and pepper".to_string(),
+            ],
+            "Layered pasta dish with meat sauce, cheese, and marinara.",
+        ).await,
+    ]
+}
+
+// =============== JAPANESE SECTION ===============
+async fn get_japanese_meals() -> Vec<Meal> {
+    vec![
+        create_meal(
+            "Sushi Platter",
+            "Main Course",
+            Some(480),
+            vec![
+                "Sushi rice".to_string(),
+                "Nori seaweed".to_string(),
+                "Fresh salmon".to_string(),
+                "Tuna".to_string(),
+                "Shrimp".to_string(),
+                "Cucumber".to_string(),
+                "Avocado".to_string(),
+                "Soy sauce".to_string(),
+                "Wasabi".to_string(),
+                "Pickled ginger".to_string(),
+                "Rice vinegar".to_string(),
+                "Sugar".to_string(),
+                "Salt".to_string(),
+            ],
+            "Assorted sushi including nigiri, maki rolls, and sashimi.",
+        ).await,
+        
+        create_meal(
+            "Ramen",
+            "Soup",
+            Some(520),
+            vec![
+                "Ramen noodles".to_string(),
+                "Pork broth".to_string(),
+                "Chashu pork".to_string(),
+                "Soft-boiled eggs".to_string(),
+                "Bamboo shoots".to_string(),
+                "Nori seaweed".to_string(),
+                "Green onions".to_string(),
+                "Bean sprouts".to_string(),
+                "Soy sauce".to_string(),
+                "Mirin".to_string(),
+                "Sake".to_string(),
+                "Garlic".to_string(),
+                "Ginger".to_string(),
+            ],
+            "Japanese noodle soup with rich broth, chashu pork, and soft-boiled eggs.",
+        ).await,
+        
+        create_meal(
+            "Tempura",
+            "Appetizer",
+            Some(320),
+            vec![
+                "Shrimp".to_string(),
+                "Sweet potato".to_string(),
+                "Zucchini".to_string(),
+                "Eggplant".to_string(),
+                "Flour".to_string(),
+                "Cornstarch".to_string(),
+                "Egg".to_string(),
+                "Ice water".to_string(),
+                "Baking powder".to_string(),
+                "Vegetable oil".to_string(),
+                "Tempura dipping sauce".to_string(),
+                "Daikon radish".to_string(),
+                "Ginger".to_string(),
+            ],
+            "Lightly battered and deep-fried seafood and vegetables.",
+        ).await,
+    ]
+}
+
+// =============== MEXICAN SECTION ===============
+async fn get_mexican_meals() -> Vec<Meal> {
+    vec![
+        create_meal(
+            "Tacos al Pastor",
+            "Main Course",
+            Some(350),
+            vec![
+                "Pork shoulder".to_string(),
+                "Pineapple".to_string(),
+                "Corn tortillas".to_string(),
+                "Onion".to_string(),
+                "Cilantro".to_string(),
+                "Lime wedges".to_string(),
+                "Guajillo chilies".to_string(),
+                "Achiote paste".to_string(),
+                "Garlic".to_string(),
+                "Vinegar".to_string(),
+                "Oregano".to_string(),
+                "Cumin".to_string(),
+                "Salt and pepper".to_string(),
+            ],
+            "Mexican tacos with marinated pork, pineapple, onions, and cilantro.",
+        ).await,
+        
+        create_meal(
+            "Guacamole",
+            "Appetizer",
+            Some(220),
+            vec![
+                "Avocados".to_string(),
+                "Lime juice".to_string(),
+                "Red onion".to_string(),
+                "Tomato".to_string(),
+                "Cilantro".to_string(),
+                "Jalapeño pepper".to_string(),
+                "Garlic".to_string(),
+                "Salt".to_string(),
+                "Tortilla chips".to_string(),
+            ],
+            "Fresh avocado dip with lime, onion, tomato, and cilantro.",
+        ).await,
+        
+        create_meal(
+            "Churros",
+            "Dessert",
+            Some(280),
+            vec![
+                "Flour".to_string(),
+                "Water".to_string(),
+                "Butter".to_string(),
+                "Eggs".to_string(),
+                "Sugar".to_string(),
+                "Cinnamon".to_string(),
+                "Salt".to_string(),
+                "Vegetable oil".to_string(),
+                "Chocolate sauce".to_string(),
+            ],
+            "Fried dough pastry dusted with cinnamon sugar, served with chocolate sauce.",
+        ).await,
+    ]
+}
+
+// =============== INTERNATIONAL DESSERTS ===============
+async fn get_international_desserts() -> Vec<Meal> {
+    vec![
+        create_meal(
+            "Chocolate Lava Cake",
+            "Dessert",
+            Some(420),
+            vec![
+                "Dark chocolate".to_string(),
+                "Butter".to_string(),
+                "Eggs".to_string(),
+                "Sugar".to_string(),
+                "Flour".to_string(),
+                "Cocoa powder".to_string(),
+                "Vanilla ice cream".to_string(),
+                "Powdered sugar".to_string(),
+                "Salt".to_string(),
+            ],
+            "Decadent chocolate cake with a molten chocolate center, served with vanilla ice cream.",
+        ).await,
+        
+        create_meal(
+            "Crème Brûlée",
+            "Dessert",
+            Some(320),
+            vec![
+                "Heavy cream".to_string(),
+                "Egg yolks".to_string(),
+                "Sugar".to_string(),
+                "Vanilla bean".to_string(),
+                "Salt".to_string(),
+                "Berries for garnish".to_string(),
+            ],
+            "French dessert consisting of rich custard topped with caramelized sugar.",
+        ).await,
+        
+        create_meal(
+            "Cheesecake",
+            "Dessert",
+            Some(380),
+            vec![
+                "Cream cheese".to_string(),
+                "Graham cracker crumbs".to_string(),
+                "Sugar".to_string(),
+                "Eggs".to_string(),
+                "Sour cream".to_string(),
+                "Vanilla extract".to_string(),
+                "Butter".to_string(),
+                "Lemon juice".to_string(),
+                "Fresh berries".to_string(),
+            ],
+            "Creamy cheesecake with graham cracker crust, topped with fresh berries.",
+        ).await,
+        
+        create_meal(
+            "Macarons",
+            "Dessert",
+            Some(180),
+            vec![
+                "Almond flour".to_string(),
+                "Powdered sugar".to_string(),
+                "Egg whites".to_string(),
+                "Granulated sugar".to_string(),
+                "Food coloring".to_string(),
+                "Buttercream filling".to_string(),
+                "Ganache filling".to_string(),
+                "Salt".to_string(),
+            ],
+            "French sandwich cookies with crispy shell and creamy filling.",
+        ).await,
+        
+        create_meal(
+            "Gelato",
+            "Dessert",
+            Some(200),
+            vec![
+                "Whole milk".to_string(),
+                "Heavy cream".to_string(),
+                "Sugar".to_string(),
+                "Egg yolks".to_string(),
+                "Vanilla bean".to_string(),
+                "Fresh fruit puree".to_string(),
+                "Chocolate".to_string(),
+                "Pistachios".to_string(),
+            ],
+            "Italian-style ice cream with intense flavors and creamy texture.",
+        ).await,
+    ]
+}
+
+// =============== HEALTHY OPTIONS ===============
+async fn get_healthy_meals() -> Vec<Meal> {
+    vec![
+        create_meal(
+            "Greek Salad",
+            "Salad",
+            Some(280),
+            vec![
+                "Romaine lettuce".to_string(),
+                "Cucumber".to_string(),
+                "Tomatoes".to_string(),
+                "Red onion".to_string(),
+                "Kalamata olives".to_string(),
+                "Feta cheese".to_string(),
+                "Olive oil".to_string(),
+                "Lemon juice".to_string(),
+                "Oregano".to_string(),
+                "Salt and pepper".to_string(),
+            ],
+            "Fresh Mediterranean salad with vegetables, olives, and feta cheese.",
+        ).await,
+        
+        create_meal(
+            "Quinoa Bowl",
+            "Healthy",
+            Some(350),
+            vec![
+                "Quinoa".to_string(),
+                "Chickpeas".to_string(),
+                "Avocado".to_string(),
+                "Kale".to_string(),
+                "Cherry tomatoes".to_string(),
+                "Cucumber".to_string(),
+                "Lemon tahini dressing".to_string(),
+                "Pumpkin seeds".to_string(),
+                "Salt and pepper".to_string(),
+            ],
+            "Nutrient-packed bowl with quinoa, vegetables, and tahini dressing.",
+        ).await,
+        
+        create_meal(
+            "Grilled Salmon",
+            "Healthy",
+            Some(380),
+            vec![
+                "Salmon fillet".to_string(),
+                "Lemon".to_string(),
+                "Dill".to_string(),
+                "Garlic".to_string(),
+                "Olive oil".to_string(),
+                "Asparagus".to_string(),
+                "Brown rice".to_string(),
+                "Salt and pepper".to_string(),
+                "Butter".to_string(),
+            ],
+            "Grilled salmon with lemon dill sauce, served with asparagus and brown rice.",
+        ).await,
+        
+        create_meal(
+            "Smoothie Bowl",
+            "Breakfast",
+            Some(320),
+            vec![
+                "Frozen bananas".to_string(),
+                "Mixed berries".to_string(),
+                "Greek yogurt".to_string(),
+                "Almond milk".to_string(),
+                "Chia seeds".to_string(),
+                "Granola".to_string(),
+                "Coconut flakes".to_string(),
+                "Honey".to_string(),
+                "Fresh fruit toppings".to_string(),
+            ],
+            "Thick smoothie bowl topped with granola, fresh fruit, and seeds.",
+        ).await,
+    ]
+}
+
+async fn create_meal(
+    name: &str,
+    category: &str,
+    calories: Option<i32>,
+    ingredients: Vec<String>,
+    description: &str,
+) -> Meal {
+    let image_url = match get_meal_image(name).await {
+        Ok(Some(url)) => Some(url),
+        Ok(None) => {
+            eprintln!("No image found for {}, using placeholder", name);
+            Some(format!("https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text={}", 
+                name.replace(" ", "+")))
+        }
+        Err(e) => {
+            eprintln!("Error fetching image for {}: {}", name, e);
+            Some("https://via.placeholder.com/400x300/4ECDC4/000000?text=Food+Image".to_string())
+        }
+    };
+
+    Meal {
+        id: None,
+        name: name.to_string(),
+        ingredients,
+        category: category.to_string(),
+        calories,
+        image_url,
+        description: Some(description.to_string()),
+    }
 }
