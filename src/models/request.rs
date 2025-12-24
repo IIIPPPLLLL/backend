@@ -59,3 +59,10 @@ pub struct DateRangeRequest {
     pub start_date: String, // Format: YYYY-MM-DD
     pub end_date: String,   // Format: YYYY-MM-DD
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateNotificationRequest {
+    pub title: String,
+    pub message: Option<String>,
+    pub icon: Option<String>,
+}

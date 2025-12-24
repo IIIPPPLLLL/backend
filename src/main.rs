@@ -17,7 +17,10 @@ use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
-    controller::{auth_controller::AuthController, schedule_controller::ScheduleController},
+    controller::{
+        auth_controller::AuthController, notification_controller::NotificationController,
+        schedule_controller::ScheduleController,
+    },
     utils::seed_meal::smart_seed_meals,
 };
 
@@ -51,6 +54,7 @@ async fn main() {
         .merge(UserController::routes())
         .merge(ScheduleController::routes())
         .merge(AuthController::routes())
+        .merge(NotificationController::routes())
         .layer(cors)
         .with_state(state_for_router);
 

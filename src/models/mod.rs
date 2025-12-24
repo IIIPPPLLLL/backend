@@ -5,6 +5,7 @@ pub mod health;
 pub mod loginrequest;
 pub mod meals;
 pub mod mealtype;
+pub mod notification;
 pub mod recommendationmeals;
 pub mod request;
 pub mod response;
