@@ -1,6 +1,7 @@
 use crate::handler::schedule_handler::{
-    add_item_to_schedule_handler, delete_schedule_handler, get_user_schedules_handler,
-    remove_item_from_schedule_handler, update_schedule_info_handler, update_shopping_item_handler,
+    add_item_to_schedule_handler, create_eat_schedule_handler, delete_schedule_handler,
+    get_user_schedules_handler, remove_item_from_schedule_handler, update_schedule_info_handler,
+    update_shopping_item_handler,
 };
 use crate::middleware::authmiddleware::auth_middleware;
 use crate::{handler::schedule_handler::create_schedule_handler, state::AppState};
@@ -19,6 +20,7 @@ impl ScheduleController {
             .route("/addItem", post(add_item_to_schedule_handler))
             .route("/removeItem", post(remove_item_from_schedule_handler))
             .route("/updateInfo", put(update_schedule_info_handler))
+            .route("/eat/create", post(create_eat_schedule_handler))
             .layer(axum::middleware::from_fn(auth_middleware));
 
         Router::new().nest("/schedules", protected_routes)

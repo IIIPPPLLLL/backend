@@ -1,4 +1,5 @@
 pub mod claims;
+pub mod eatschedule;
 pub mod foodpreferences;
 pub mod health;
 pub mod loginrequest;

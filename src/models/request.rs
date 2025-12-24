@@ -45,3 +45,11 @@ pub struct UpdateFoodPreferencesRequest {
     pub preferred_foods: Option<Vec<String>>,
     pub allergies: Option<Vec<String>>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateEatScheduleRequest {
+    pub date: String,
+    pub meal_time: String,
+    pub meal_id: String,
+    pub notes: Option<String>,
+}

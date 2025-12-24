@@ -1,7 +1,10 @@
 use crate::{
-    models::response::{
-        CreateScheduleRequest, CreateShoppingItem, UpdateScheduleInfoRequest,
-        UpdateShoppingItemRequest,
+    models::{
+        request::CreateEatScheduleRequest,
+        response::{
+            CreateScheduleRequest, CreateShoppingItem, UpdateScheduleInfoRequest,
+            UpdateShoppingItemRequest,
+        },
     },
     state::AppState,
 };
@@ -608,4 +611,29 @@ pub async fn update_schedule_info_handler(
             )
         }
     }
+}
+pub async fn create_eat_schedule_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Json(payload): Json<CreateEatScheduleRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let meal_object_id =
+        ObjectId::parse_str(&payload.meal_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    state
+        .schedule_service
+        .create_eat_schedule(
+            user_id,
+            payload.date,
+            payload.meal_time,
+            meal_object_id,
+            payload.notes,
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(json!({
+        "status": "success",
+        "message": "Eat schedule created"
+    })))
 }

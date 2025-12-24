@@ -1,4 +1,5 @@
 use crate::models::{
+    eatschedule::EatSchedule,
     response::{CreateScheduleRequest, CreateShoppingItem},
     schedule::Schedule,
     shoppinglist::ShoppingItem,
@@ -6,18 +7,23 @@ use crate::models::{
 use futures_util::TryStreamExt;
 use mongodb::{
     Collection,
-    bson::{doc, oid::ObjectId},
+    bson::{DateTime, doc, oid::ObjectId},
 };
 
 #[derive(Clone)]
 pub struct ScheduleService {
     pub schedule_collection: Collection<Schedule>,
+    pub eat_schedule_collection: Collection<EatSchedule>,
 }
 
 impl ScheduleService {
-    pub fn new(schedule_collection: Collection<Schedule>) -> Self {
+    pub fn new(
+        schedule_collection: Collection<Schedule>,
+        eat_schedule_collection: Collection<EatSchedule>,
+    ) -> Self {
         Self {
             schedule_collection,
+            eat_schedule_collection,
         }
     }
 
@@ -301,5 +307,29 @@ impl ScheduleService {
         }
 
         Ok(updated)
+    }
+
+    pub async fn create_eat_schedule(
+        &self,
+        user_id: ObjectId,
+        date: String,
+        meal_time: String,
+        meal_id: ObjectId,
+        notes: Option<String>,
+    ) -> mongodb::error::Result<()> {
+        let schedule = EatSchedule {
+            id: None,
+            user_id,
+            date,
+            meal_time,
+            meal_id,
+            notes,
+            created_at: DateTime::now(),
+        };
+
+        self.eat_schedule_collection
+            .insert_one(schedule, None)
+            .await?;
+        Ok(())
     }
 }
