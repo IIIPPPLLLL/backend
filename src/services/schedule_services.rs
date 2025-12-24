@@ -316,8 +316,8 @@ impl ScheduleService {
         meal_time: String,
         meal_id: ObjectId,
         notes: Option<String>,
-    ) -> mongodb::error::Result<()> {
-        let schedule = EatSchedule {
+    ) -> mongodb::error::Result<EatSchedule> {
+        let mut schedule = EatSchedule {
             id: None,
             user_id,
             date,
@@ -327,11 +327,16 @@ impl ScheduleService {
             created_at: DateTime::now(),
         };
 
-        self.eat_schedule_collection
-            .insert_one(schedule, None)
+        let result = self
+            .eat_schedule_collection
+            .insert_one(&schedule, None)
             .await?;
-        Ok(())
+
+        schedule.id = result.inserted_id.as_object_id();
+
+        Ok(schedule)
     }
+
     pub async fn get_user_eat_schedules(
         &self,
         user_id: ObjectId,
@@ -381,5 +386,22 @@ impl ScheduleService {
 
         let cursor = self.eat_schedule_collection.find(filter, None).await?;
         cursor.try_collect().await
+    }
+    pub async fn delete_eat_schedule(
+        &self,
+        schedule_id: ObjectId,
+        user_id: ObjectId,
+    ) -> mongodb::error::Result<bool> {
+        let filter = doc! {
+            "_id": schedule_id,
+            "user_id": user_id
+        };
+
+        let result = self
+            .eat_schedule_collection
+            .delete_one(filter, None)
+            .await?;
+
+        Ok(result.deleted_count > 0)
     }
 }

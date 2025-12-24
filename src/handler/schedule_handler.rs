@@ -639,31 +639,46 @@ pub async fn create_eat_schedule_handler(
 }
 
 pub async fn get_user_eat_schedules_handler(
-    State(state): State<AppState>,
     Extension(user_id): Extension<ObjectId>,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
-    println!("📋 Request: Get eat schedules for user {}", user_id);
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    println!("📋 Getting eat schedules for user: {:?}", user_id);
 
     match state.schedule_service.get_user_eat_schedules(user_id).await {
         Ok(schedules) => {
-            let response = json!({
-                "status": "success",
-                "message": format!("Found {} eat schedules", schedules.len()),
-                "user_id": user_id.to_string(),
-                "count": schedules.len(),
-                "data": schedules
-            });
+            let response: Vec<_> = schedules
+                .into_iter()
+                .map(|schedule| {
+                    json!({
+                        "id": schedule.id.unwrap().to_string(),
+                        "user_id": schedule.user_id.to_string(),
+                        "date": schedule.date,
+                        "meal_time": schedule.meal_time,
+                        "meal_id": schedule.meal_id.to_string(),
+                        "notes": schedule.notes,
+                        "created_at": schedule.created_at.to_rfc3339_string()
+                    })
+                })
+                .collect();
 
-            Ok((StatusCode::OK, Json(response)))
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "status": "success",
+                    "message": format!("Found {} eat schedules", response.len()),
+                    "data": response
+                })),
+            )
         }
         Err(e) => {
-            let error_msg = e.to_string();
-            eprintln!("❌ Error getting eat schedules: {}", error_msg);
-
-            Err((
+            eprintln!("❌ Error fetching eat schedules: {}", e);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to fetch eat schedules".to_string(),
-            ))
+                Json(json!({
+                    "status": "error",
+                    "message": "Failed to fetch eat schedules"
+                })),
+            )
         }
     }
 }
@@ -822,6 +837,46 @@ pub async fn get_schedules_by_date_range_handler(
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to fetch schedules".to_string(),
+            ))
+        }
+    }
+}
+pub async fn delete_eat_schedule_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+    Path(schedule_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!(
+        "🗑️ Request: Delete eat schedule {} for user {}",
+        schedule_id, user_id
+    );
+
+    let object_id = ObjectId::parse_str(&schedule_id).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            "Invalid schedule ID format".to_string(),
+        )
+    })?;
+
+    match state
+        .schedule_service
+        .delete_eat_schedule(object_id, user_id)
+        .await
+    {
+        Ok(true) => {
+            let response = json!({
+                "status": "success",
+                "message": "Eat schedule deleted successfully"
+            });
+
+            Ok((StatusCode::OK, Json(response)))
+        }
+        Ok(false) => Err((StatusCode::NOT_FOUND, "Eat schedule not found".to_string())),
+        Err(e) => {
+            eprintln!("❌ Error deleting eat schedule: {}", e);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to delete eat schedule".to_string(),
             ))
         }
     }
