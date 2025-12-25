@@ -1,3 +1,6 @@
+pub mod chatbotresponse;
+pub mod chatmessage;
+pub mod chatsession;
 pub mod claims;
 pub mod eatschedule;
 pub mod foodpreferences;

@@ -18,8 +18,8 @@ use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
     controller::{
-        auth_controller::AuthController, notification_controller::NotificationController,
-        schedule_controller::ScheduleController,
+        auth_controller::AuthController, chatbot_controller::ChatbotController,
+        notification_controller::NotificationController, schedule_controller::ScheduleController,
     },
     utils::seed_meal::smart_seed_meals,
 };
@@ -55,6 +55,7 @@ async fn main() {
         .merge(ScheduleController::routes())
         .merge(AuthController::routes())
         .merge(NotificationController::routes())
+        .merge(ChatbotController::routes())
         .layer(cors)
         .with_state(state_for_router);
 

@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::models::response::CreateShoppingItem;
+
 #[derive(Debug, Deserialize)]
 pub struct UpdateGenderRequest {
     pub gender: String,
@@ -65,4 +67,14 @@ pub struct CreateNotificationRequest {
     pub title: String,
     pub message: Option<String>,
     pub icon: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ChatRequest {
+    pub message: String,
+}
+
+#[derive(Deserialize)]
+pub struct ChatHistoryQuery {
+    pub limit: Option<i64>,
 }

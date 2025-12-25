@@ -20,3 +20,5 @@ log = "0.4"
 tower-http = { version = "0.5", features = ["cors"] }
 reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
 thiserror = "2.0.17"
+anyhow = "1.0.100"
+warp = "0.4.2"

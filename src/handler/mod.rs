@@ -1,4 +1,5 @@
 pub mod auth_handler;
+pub mod chatbot_handler;
 pub mod meal_handler;
 pub mod notification_handler;
 pub mod preferences_handler;

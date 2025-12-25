@@ -1,3 +1,4 @@
+pub mod chatbot_service;
 pub mod notification_service;
 pub mod schedule_services;
 pub mod user_services;
