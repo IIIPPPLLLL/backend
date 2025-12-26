@@ -4,14 +4,15 @@ use crate::{
         chatbotresponse::{ChatbotAction, ChatbotResponse, ScheduleItem},
         chatmessage::ChatMessage,
         eatschedule::EatSchedule,
+        request::CreateEatScheduleRequest,
         response::CreateScheduleRequest,
         user::User,
     },
     services::{
         notification_service::NotificationService, schedule_services::ScheduleService,
-        user_services::UserService,
+        user_services::UserService, utils_service::UtilsService,
     },
-    utils::llm::openai_client::OpenAiClient,
+    utils::{self, llm::openai_client::OpenAiClient},
 };
 use futures_util::TryStreamExt;
 use mongodb::{
@@ -27,6 +28,7 @@ pub struct ChatbotService {
     user_service: Arc<UserService>,
     schedule_service: Arc<ScheduleService>,
     notification_service: Arc<NotificationService>,
+    utils_service: Arc<UtilsService>,
 }
 
 impl ChatbotService {
@@ -36,6 +38,7 @@ impl ChatbotService {
         user_service: Arc<UserService>,
         schedule_service: Arc<ScheduleService>,
         notification_service: Arc<NotificationService>,
+        utils_service: Arc<UtilsService>,
     ) -> Self {
         Self {
             chat_collection,
@@ -43,6 +46,7 @@ impl ChatbotService {
             user_service,
             schedule_service,
             notification_service,
+            utils_service,
         }
     }
 
@@ -343,7 +347,6 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(prompt)
     }
 
-    /// Execute actions from the chatbot response
     async fn execute_actions(
         &self,
         user_id: ObjectId,
@@ -384,7 +387,6 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(())
     }
 
-    /// Helper method to create notification
     async fn execute_create_notification(
         &self,
         user_id: ObjectId,
@@ -408,14 +410,12 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(())
     }
 
-    /// Helper method to recommend meals
     async fn execute_recommend_meal(
         &self,
         user_id: ObjectId,
         meal_names: &[String],
         reason: &Option<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Create a notification with the recommendations
         let message = format!(
             "Meal recommendations: {}. {}",
             meal_names.join(", "),
@@ -444,7 +444,6 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(())
     }
 
-    /// Helper method to create eat schedule
     async fn execute_create_eat_schedule(
         &self,
         user_id: ObjectId,
@@ -453,47 +452,124 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         meal_name: &str,
         notes: &Option<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // First, we need to find or create a meal
-        // For simplicity, we'll create a new meal
         use crate::models::meals::Meal;
-
-        // In a real implementation, you would:
-        // 1. Search for existing meal with similar name
-        // 2. Or create a new meal in the database
-        // 3. Then create the eat schedule
-
-        // For now, we'll just create a notification about the scheduled meal
-        let message = format!(
-            "I've scheduled '{}' for {} at {}. {}",
-            meal_name,
-            date,
-            meal_time,
-            notes.as_deref().unwrap_or("")
-        );
-
         use crate::models::request::CreateNotificationRequest;
+        use crate::utils::pexels::get_meal_image;
 
-        let request = CreateNotificationRequest {
+        let user = self
+            .user_service
+            .get_user_by_id(user_id)
+            .await?
+            .ok_or("User not found")?;
+
+        let (meal_id, calories) = match self.utils_service.get_meal_by_name(meal_name).await? {
+            Some(meal) => (
+                meal.id.ok_or("Meal found but has no ID")?,
+                meal.calories.unwrap_or(500),
+            ),
+
+            None => {
+                log::info!("🍽️ Creating AI-generated meal: {}", meal_name);
+                let allergies: Vec<String> = user
+                    .food_preferences
+                    .as_ref()
+                    .map(|p| p.allergies.clone())
+                    .unwrap_or_default();
+
+                let ingredients = self
+                    .generate_ingredients(meal_name, &allergies)
+                    .await
+                    .unwrap_or_else(|e| {
+                        log::error!("Failed to generate ingredients: {}", e);
+                        vec!["Main ingredient".to_string()]
+                    });
+
+                let goal = user.goal.as_deref().unwrap_or("maintain");
+
+                let calories = self
+                    .estimate_calories_ai(meal_name, meal_time, goal)
+                    .await
+                    .unwrap_or(500);
+
+                let image_url = match get_meal_image(meal_name).await {
+                    Ok(Some(url)) => Some(url),
+                    Ok(None) => Some(format!(
+                        "https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text={}",
+                        meal_name.replace(" ", "+")
+                    )),
+                    Err(_) => Some(format!(
+                        "https://via.placeholder.com/400x300/4ECDC4/000000?text={}",
+                        meal_name.replace(" ", "+")
+                    )),
+                };
+
+                let category = if meal_name.to_lowercase().contains("salad") {
+                    "salad"
+                } else if meal_name.to_lowercase().contains("soup") {
+                    "soup"
+                } else if meal_name.to_lowercase().contains("smoothie") {
+                    "drink"
+                } else if meal_name.to_lowercase().contains("grill") {
+                    "grilled"
+                } else {
+                    "main-course"
+                };
+
+                let description = format!(
+                    "Hidangan {} yang dibuat oleh AI Nutritionist, disesuaikan dengan tujuan {}.",
+                    meal_name, goal
+                );
+
+                let meal = Meal {
+                    id: None,
+                    name: meal_name.to_string(),
+                    ingredients,
+                    category: category.to_string(),
+                    calories: Some(calories),
+                    image_url,
+                    description: Some(description),
+                };
+
+                let meal_id = self.utils_service.add_meal(meal).await?;
+                (meal_id, calories)
+            }
+        };
+
+        self.schedule_service
+            .create_eat_schedule(
+                user_id,
+                date.to_string(),
+                meal_time.to_string(),
+                meal_id,
+                notes.clone(),
+            )
+            .await?;
+
+        let notif = CreateNotificationRequest {
             title: "📅 Meal Scheduled".to_string(),
-            message: Some(message),
+            message: Some(format!(
+                "{} dijadwalkan untuk {} ({} kcal)",
+                meal_name, meal_time, calories
+            )),
             icon: Some("🍴".to_string()),
         };
 
         self.notification_service
-            .create_notification(user_id, request)
+            .create_notification(user_id, notif)
             .await?;
 
         log::info!(
-            "Eat schedule created for user {}: {} at {}",
+            "✅ Eat schedule created: user={}, meal={}, date={}, time={}",
             user_id,
             meal_name,
-            date
+            date,
+            meal_time
         );
+
         Ok(())
     }
 
-    /// Helper method to create shopping schedule
-    async fn execute_create_shopping_schedule(
+    pub async fn execute_create_shopping_schedule(
         &self,
         user_id: ObjectId,
         name: &str,
@@ -530,7 +606,6 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
             items.len()
         );
 
-        // Also create a notification
         use crate::models::request::CreateNotificationRequest;
 
         let notification_request = CreateNotificationRequest {
@@ -550,8 +625,7 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(())
     }
 
-    /// Get chat history for a user
-    async fn get_chat_history(
+    pub async fn get_chat_history(
         &self,
         user_id: ObjectId,
         limit: i64,
@@ -565,13 +639,11 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         let cursor = self.chat_collection.find(filter, find_options).await?;
         let mut messages: Vec<ChatMessage> = cursor.try_collect().await?;
 
-        // Reverse to get chronological order (oldest to newest)
         messages.reverse();
 
         Ok(messages)
     }
 
-    /// Save a message to the chat history
     async fn save_message(
         &self,
         user_id: ObjectId,
@@ -590,7 +662,123 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         Ok(())
     }
 
-    /// Get recent conversations (optional helper method)
+    pub async fn estimate_calories_ai(
+        &self,
+        meal_name: &str,
+        meal_time: &str,
+        goal: &str,
+    ) -> Result<i32, Box<dyn std::error::Error>> {
+        let prompt = format!(
+            r#"
+You are a professional nutritionist.
+
+Task:
+Estimate calories for ONE serving of a meal.
+
+Meal name: "{meal_name}"
+Meal time: "{meal_time}"
+User goal: "{goal}"
+
+STRICT RULES:
+Meal time calorie ranges:
+- breakfast: 300–500 kcal
+- lunch: 500–750 kcal
+- dinner: 400–650 kcal
+
+Goal adjustment:
+- cutting → lower range
+- maintain → middle range
+- bulking → upper range
+
+ASSUME:
+- Standard adult portion
+- No extreme junk or oversized meals unless clearly implied
+
+OUTPUT:
+ONLY valid JSON.
+NO text.
+NO explanation.
+
+JSON:
+{{ "calories": number }}
+"#,
+        );
+
+        let response = self
+            .openai
+            .chat(vec![
+                json!({ "role": "system", "content": "You are a nutritionist AI." }),
+                json!({ "role": "user", "content": prompt }),
+            ])
+            .await?;
+
+        let parsed: serde_json::Value = serde_json::from_str(&response)
+            .map_err(|_| format!("Invalid JSON from AI: {}", response))?;
+
+        let calories = parsed
+            .get("calories")
+            .and_then(|v| v.as_i64())
+            .ok_or("Calories missing")?;
+
+        Ok(calories.clamp(300, 900) as i32)
+    }
+
+    pub async fn generate_ingredients(
+        &self,
+        meal_name: &str,
+        allergies: &[String],
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        let prompt = format!(
+            r#"
+You are a professional nutritionist.
+
+Task:
+Generate ingredients for the following meal:
+"{meal_name}"
+
+RULES:
+- Cuisine can be ANY (Western, Asian, Middle Eastern, etc.)
+- Use realistic, commonly available ingredients
+- Exclude allergens: {:?}
+- MAX 8 ingredients
+- NO quantities
+- NO explanation
+
+OUTPUT:
+ONLY valid JSON
+
+JSON FORMAT:
+{{ "ingredients": ["string"] }}
+"#,
+            allergies
+        );
+
+        let response = self
+            .openai
+            .chat(vec![
+                json!({ "role": "system", "content": "You are a nutritionist AI." }),
+                json!({ "role": "user", "content": prompt }),
+            ])
+            .await?;
+
+        let parsed: serde_json::Value = serde_json::from_str(&response)
+            .map_err(|_| format!("Invalid JSON from AI: {}", response))?;
+
+        let ingredients = parsed
+            .get("ingredients")
+            .and_then(|v| v.as_array())
+            .ok_or("Ingredients missing")?
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect::<Vec<_>>();
+
+        Ok(if ingredients.is_empty() {
+            vec!["Main ingredient".to_string()]
+        } else {
+            ingredients
+        })
+    }
+
     pub async fn get_recent_conversations(
         &self,
         user_id: ObjectId,
@@ -606,7 +794,6 @@ NOW RESPOND TO THE USER'S MESSAGE IN VALID JSON FORMAT."#,
         cursor.try_collect().await
     }
 
-    /// Clear chat history for a user (optional helper method)
     pub async fn clear_chat_history(&self, user_id: ObjectId) -> mongodb::error::Result<()> {
         let filter = doc! { "user_id": user_id };
         self.chat_collection.delete_many(filter, None).await?;

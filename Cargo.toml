@@ -22,3 +22,4 @@ reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
 thiserror = "2.0.17"
 anyhow = "1.0.100"
 warp = "0.4.2"
+regex = "1.12.2"

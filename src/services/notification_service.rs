@@ -63,4 +63,26 @@ impl NotificationService {
         let result = self.collection.update_one(filter, update, None).await?;
         Ok(result.modified_count > 0)
     }
+    pub async fn mark_all_as_read(&self, user_id: ObjectId) -> mongodb::error::Result<u64> {
+        let filter = doc! {
+            "user_id": user_id,
+            "is_read": false
+        };
+
+        let update = doc! { "$set": { "is_read": true } };
+        let result = self.collection.update_many(filter, update, None).await?;
+        Ok(result.modified_count)
+    }
+    pub async fn get_one_notification(
+        &self,
+        notification_id: ObjectId,
+        user_id: ObjectId,
+    ) -> mongodb::error::Result<Option<Notification>> {
+        let filter = doc! {
+            "_id": notification_id,
+            "user_id": user_id
+        };
+
+        self.collection.find_one(filter, None).await
+    }
 }

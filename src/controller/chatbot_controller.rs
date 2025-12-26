@@ -21,7 +21,7 @@ impl ChatbotController {
         let auth_routes = Router::new()
             .route("/ask", post(ask_chatbot_handler))
             .route("/history", get(get_chat_history_handler))
-            .route("/history", delete(clear_chat_history_handler))
+            .route("/history/clear", delete(clear_chat_history_handler))
             .layer(middleware::from_fn(auth_middleware));
 
         Router::new().nest("/chatbot", auth_routes)

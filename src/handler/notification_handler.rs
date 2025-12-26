@@ -76,3 +76,18 @@ pub async fn mark_notification_as_read_handler(
         "message": "Notification marked as read"
     })))
 }
+pub async fn mark_all_notifications_as_read_handler(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<ObjectId>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let updated_count = state
+        .notification_service
+        .mark_all_as_read(user_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(json!({
+        "status": "success",
+        "message": format!("{} notifications marked as read", updated_count)
+    })))
+}

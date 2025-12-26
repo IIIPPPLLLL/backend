@@ -52,6 +52,7 @@ impl AppState {
             user_service.clone(),
             schedule_service.clone(),
             notification_service.clone(),
+            utils_service.clone(),
         ));
         Self {
             db,

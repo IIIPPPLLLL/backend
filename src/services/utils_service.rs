@@ -233,4 +233,19 @@ impl UtilsService {
         let filter = doc! { "_id": meal_id };
         self.meals_collection.find_one(filter, None).await
     }
+
+    pub async fn get_meal_by_name(
+        &self,
+        name: &str,
+    ) -> Result<Option<Meal>, mongodb::error::Error> {
+        let normalized_name = name.trim().to_lowercase();
+
+        let filter = doc! {
+            "name": {
+                "$regex": format!("^{}$", regex::escape(&normalized_name)),
+                "$options": "i"
+            }
+        };
+        self.meals_collection.find_one(filter, None).await
+    }
 }

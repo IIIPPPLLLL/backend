@@ -657,6 +657,7 @@ pub async fn get_user_eat_schedules_handler(
                         "meal_id": schedule.meal_id.to_string(),
                         "notes": schedule.notes,
                         "created_at": schedule.created_at.to_rfc3339_string()
+
                     })
                 })
                 .collect();
